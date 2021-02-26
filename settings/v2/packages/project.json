@@ -1,0 +1,30 @@
+{
+  "__version__": "1.0.1",
+  "general": {
+    "designResolution": {
+      "width": 1080,
+      "height": 2144
+    }
+  },
+  "physics": {
+    "collisionGroups": [
+      {
+        "index": 2,
+        "name": "chess2"
+      },
+      {
+        "index": 3,
+        "name": "chess4"
+      }
+    ],
+    "collisionMatrix": {
+      "0": 1,
+      "2": 0,
+      "3": 0
+    },
+    "autoSimulation": true,
+    "gravity": {
+      "x": 100
+    }
+  }
+}
