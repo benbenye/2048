@@ -1,4 +1,4 @@
-import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType } from 'cc';
+import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType } from 'cc';
 const { ccclass, property } = _decorator;
 
 import Chess from './Chess';
@@ -93,18 +93,19 @@ export default class ChessManager extends Component {
     }
 
     public move (direction: number) {
-
-      // (right : left) : (down : up)
+        // (right : left) : (down : up)
         //   (1 : 3) :2 : 0
+        const parent = find('Canvas/Cell/numberNode');
+        parent?.children.forEach(node => {
+            console.log('before Move bodytype:' + node.getComponent(RigidBody2D).type)
+            node.getComponent(RigidBody2D).enabledContactListener = true;
+            node.getComponent(RigidBody2D).type = ERigidBody2DType.Dynamic;
+            console.log('before Move set bodytype:' + node.getComponent(RigidBody2D).type)
+            
+        })
         const vector = this.getVector(direction);
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
 		console.log(PhysicsSystem2D.instance.gravity)
-        const parent = find('Canvas/Cell/numberNode');
-        parent?.children.forEach(node => {
-            console.log(node.getComponent(RigidBody2D))
-            // node.getComponent(RigidBody2D).enabledContactListener = true;
-            // node.getComponent(RigidBody2D).type = 1;
-        })
     }
     buildTraversals (vector: object) {
         var traversals = { x: [], y: [] };
@@ -130,20 +131,18 @@ export default class ChessManager extends Component {
 
         return map[direction];
     }
-	public setChessInChessBoard(node: Node, position: Vec3, options?: any) {
+	setChessInChessBoard(node: Node, position: Vec3, options?: any) {
 		const parent = find('Canvas/Cell/numberNode');
 		
 		node.setPosition(position)
 		node.setScale(new Vec3(0.4, 0.4, 0))
 		const chessCom = node.getComponent(Chess);
+        console.log('init type:' + node.getComponent(RigidBody2D).type)
 		if (chessCom) {
-			// chessCom.cooX = coo?.x;
-			// chessCom.cooY = coo?.y;
 			if (options && options.newMerged)
 				chessCom.newMerged = options.newMerged;
 			if (options && options.isNew)
 				chessCom.isNew = options.isNew;
-			// this.chessBoard.push(chessCom)
 		}
 
 		node.parent = parent;
@@ -168,12 +167,11 @@ export default class ChessManager extends Component {
 		if (otherCollider.node.name.match('wall')) {
 			if (selfBody) {
 				selfBody.enabledContactListener = false;
+                console.log('bodytype:' + selfBody.type)
 				this.scheduleOnce(() => {
-					selfBody.type = 0;
+					selfBody.type = ERigidBody2DType.Static;
 				})
 			}
-			// RigidBodyComponent.Type.STATIC
-			// selfCollider.node.getComponent(Chess).speed = new Vec3(0,0,0);
 			selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
 		}
 		if (selfCollider.node.name === otherCollider.node.name) {
@@ -193,5 +191,17 @@ export default class ChessManager extends Component {
 				}).start();
 			}
 		}
+	}
+	newChess(name: string, coo?: any, options?: object) {
+		if (coo && coo.x === -1) {
+			console.log('full')
+			return;
+		}
+		if (!coo) {
+			coo = this.computeChessPosition(this.getRandomChessPosition());
+		}
+		this.getChessNode(name).then(node => {
+			this.setChessInChessBoard(node, coo, options);
+		})
 	}
 }

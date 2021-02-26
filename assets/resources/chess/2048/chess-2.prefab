@@ -546,7 +546,7 @@
     "awakeOnLoad": true,
     "_group": 1,
     "_type": 2,
-    "_allowSleep": true,
+    "_allowSleep": false,
     "_gravityScale": 5,
     "_linearDamping": 0,
     "_angularDamping": 0,

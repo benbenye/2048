@@ -33,7 +33,6 @@ export default class GameCtrl extends Component {
 		this.initEventListener();
 	}
 	initEventListener() {
-		// this.node.addE
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_START, this.onTouchStart, this)
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_MOVE, this.onTouchMove, this)
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_END, this.onTouchEnd, this)
@@ -59,20 +58,14 @@ export default class GameCtrl extends Component {
 		const absDx = Math.abs(deltaX)
 		const absDy = Math.abs(deltaY)
 		if (Math.max(absDx, absDy) > 10) {
-      // (right : left) : (down : up)
+      		// (right : left) : (down : up)
 			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
-			const parent = find('Canvas/Cell/numberNode');
-			parent.children.forEach(node => {
-				node.getComponent(RigidBody2D).enabledContactListener = true;
-				node.getComponent(RigidBody2D).type = 1;
-			})
 			// 移动没有完成就生成新的，可能会发生意外的碰撞导致正在移动的棋子不能完成移动
 			// 分组比较好，新棋子不参与碰撞检测
 			this.scheduleOnce(() => {
 				PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
 				this.newChess('chess-2');
 			}, 0.5)
-			// this.newChess();
     	}
 	}
 	onTouchCancel(e: EventTouch) {
