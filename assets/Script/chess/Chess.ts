@@ -29,6 +29,8 @@ export default class Chess extends Component {
     speed: Vec3 = new Vec3(0, 0, 0)
     newMerged: boolean = false; // 是否新合成的
     isNew: boolean = false; // 是否新生成的
+    isStandbyMerge: boolean = false // 是否准备合并
+    standbyMergeNode: Node = null; // 准备合并的node
     start () {
         // box.on('onTriggerStay', this.cc, this)
         // box.on('onTriggerExit', this.bb, this)
@@ -46,15 +48,15 @@ export default class Chess extends Component {
     }
     correctPosition (node: Node) {
         const position = node.getPosition();
-        const x = Math.round(position.x / runtimeData.chessWidth)
-        const y = Math.round(position.y / runtimeData.chessWidth)
-        return new Vec3(x * runtimeData.chessWidth, y * runtimeData.chessWidth, 0);
+        const x = Math.round((position.x - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+        const y = Math.round((position.y - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+        return new Vec3(x * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, y * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, 0);
     }
     public static correctPosition (node: Node) {
         const position = node.getPosition();
-        const x = Math.round(position.x / runtimeData.chessWidth)
-        const y = Math.round(position.y / runtimeData.chessWidth)
-        return new Vec3(x * runtimeData.chessWidth, y * runtimeData.chessWidth, 0);
+        const x = Math.round((position.x - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+        const y = Math.round((position.y - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+        return new Vec3(x * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, y * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, 0);
     }
 
     onBeginContact() {console.log(1)}

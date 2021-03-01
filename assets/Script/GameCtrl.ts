@@ -8,12 +8,10 @@ import RunTimeData from './data/RuntimeData';
 
 @ccclass
 export default class GameCtrl extends Component {
-	chessboard = null;
 	chessManager: ChessManager = null;
 
 	playAreaNode: Node = new Node();
 
-	text: string = 'hello';
 	touchStartLocation: Vec2 = new Vec2(0,0);
 	touchStartState: boolean = false;
 	touchMoveState: boolean = false;
@@ -27,7 +25,7 @@ export default class GameCtrl extends Component {
 	async start () {
 		this.playAreaNode = find('Canvas').getChildByName('Cell');
 		const node = await this.chessManager.getChessNode('chess-2')
-		const node1 = await this.chessManager.getChessNode('chess-4')
+		const node1 = await this.chessManager.getChessNode('chess-2')
 		this.chessManager.setChessInChessBoard(node, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.chessManager.setChessInChessBoard(node1, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.initEventListener();
@@ -36,7 +34,7 @@ export default class GameCtrl extends Component {
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_START, this.onTouchStart, this)
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_MOVE, this.onTouchMove, this)
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_END, this.onTouchEnd, this)
-		this.playAreaNode.on(SystemEvent.EventType.TOUCH_CANCEL, this.onTouchEnd, this)
+		// this.playAreaNode.on(SystemEvent.EventType.TOUCH_CANCEL, this.onTouchEnd, this)
 	}
 
 
@@ -59,12 +57,13 @@ export default class GameCtrl extends Component {
 		const absDy = Math.abs(deltaY)
 		if (Math.max(absDx, absDy) > 10) {
       		// (right : left) : (down : up)
+			  console.log(11111)
 			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
 			// 移动没有完成就生成新的，可能会发生意外的碰撞导致正在移动的棋子不能完成移动
 			// 分组比较好，新棋子不参与碰撞检测
 			this.scheduleOnce(() => {
-				PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
-				this.newChess('chess-2');
+				// PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
+				// this.newChess('chess-2');
 			}, 0.5)
     	}
 	}

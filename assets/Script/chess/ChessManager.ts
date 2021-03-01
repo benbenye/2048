@@ -1,4 +1,4 @@
-import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType } from 'cc';
+import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType } from 'cc';
 const { ccclass, property } = _decorator;
 
 import Chess from './Chess';
@@ -23,9 +23,9 @@ export default class ChessManager extends Component {
         CustomEventListener.on(Constants.EventName.MOVE, this.move, this);
     }
 
-    update(dt) {
+    // update(dt) {
 
-    }
+    // }
 
     public getRandomChessPosition (x: number = -1, y: number = -1) {
         const rx = x === -1 ? Math.floor(Math.random() * dimensionX) : x;
@@ -77,19 +77,8 @@ export default class ChessManager extends Component {
         })
     }
 
-    public computeChessPosition1(index: number, vector: number) {
-        const i = index >= (vector > 0 ? dimensionX / 2 : dimensionY / 2) ? index - 1 : index - 2;
-        const pre = i < 0 ? -1: 1;
-        const n = i / pre - 1;
-        const A = 1/2 * runtimeData.chessWidth; 
-        const CHESS = runtimeData.chessWidth;
-        const res = A * pre + CHESS * n * pre
-        console.log(`${res} * ${vector} = ${res * vector}`)
-        return res * vector;
-    }
-
     public computeChessPosition(position: Vec3) {
-        return new Vec3(position.x * runtimeData.chessWidth, position.y * runtimeData.chessWidth, 0);
+        return new Vec3(position.x * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, position.y * runtimeData.chessWidth + 0.5 * runtimeData.chessWidth, 0);
     }
 
     public move (direction: number) {
@@ -97,10 +86,16 @@ export default class ChessManager extends Component {
         //   (1 : 3) :2 : 0
         const parent = find('Canvas/Cell/numberNode');
         parent?.children.forEach(node => {
-            console.log('before Move bodytype:' + node.getComponent(RigidBody2D).type)
-            node.getComponent(RigidBody2D).enabledContactListener = true;
-            node.getComponent(RigidBody2D).type = ERigidBody2DType.Dynamic;
-            console.log('before Move set bodytype:' + node.getComponent(RigidBody2D).type)
+            const bodyComponent = node.getComponent(RigidBody2D);
+            const chessComponent = node.getComponent(Chess);
+            if (bodyComponent) {
+                bodyComponent.enabledContactListener = true;
+                bodyComponent.type = ERigidBody2DType.Dynamic;
+            }
+            if (chessComponent) {
+                chessComponent.isNew = false;
+                chessComponent.newMerged = false;
+            }
             
         })
         const vector = this.getVector(direction);
@@ -147,50 +142,75 @@ export default class ChessManager extends Component {
 
 		node.parent = parent;
         const box = node.getComponent(BoxCollider2D);
+        console.log(box)
 		box?.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
 		box?.on('end-contact', this.onEndContact, this);
+        console.log('ssss')
 		
 		tween(node).to(0.3, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).start()
 	}
-	onEndContact (selfCollider, otherCollider, contact) {
+	onEndContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
 		selfCollider.node.position = Chess.correctPosition(selfCollider.node);
 		if (otherCollider.node.name.match('wall')) return;
 		otherCollider.node.position = Chess.correctPosition(otherCollider.node);
-		// const selfCom = selfCollider.node.getComponent(Chess);
-		// const otherCom = otherCollider.node.getComponent(Chess);
-		// console.log('end',selfCollider.node.name, otherCollider.node.name, selfCom.speedX, selfCom.speedY, otherCom.speedX, otherCom.speedY)
 	}
 
 	onBeginContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
+        // self 运动中的，other停下来的
 		const selfBody = selfCollider.node.getComponent(RigidBody2D);
 		const otherBody = otherCollider.node.getComponent(RigidBody2D);
+        const selfChessComponent = selfCollider.node.getComponent(Chess);
+        const otherChessComponent = otherCollider.node.getComponent(Chess);
+        if (!selfChessComponent || !selfBody)  return;
+        if (selfChessComponent.isStandbyMerge) {
+            // merge
+            selfBody.enabledContactListener = false;
+            const standbyMergeNode = selfChessComponent.standbyMergeNode
+            if (standbyMergeNode && standbyMergeNode.getComponent(RigidBody2D))
+                standbyMergeNode.getComponent(RigidBody2D).enabledContactListener = false;
+            const n = +standbyMergeNode.getChildByName('n').getComponent(Label).string
+            standbyMergeNode.getChildByName('n').getComponent(Label).string = n * 2;
+            this.newChess(`chess-${2 * n}`, selfCollider.node.getPosition(), {newMerged: true}).then((node: Node) => {
+                // 新生成的node具有Dynamic，需要值为static，防止随重力场运动
+                node.getComponent(RigidBody2D).type = ERigidBody2DType.Static;
+                selfCollider.node.destroy();
+                standbyMergeNode.destroy();
+            })
+            return;
+        }
+
 		if (otherCollider.node.name.match('wall')) {
 			if (selfBody) {
 				selfBody.enabledContactListener = false;
                 console.log('bodytype:' + selfBody.type)
 				this.scheduleOnce(() => {
 					selfBody.type = ERigidBody2DType.Static;
+			        selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
 				})
 			}
-			selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+            return;
 		}
+        if (!otherChessComponent) return;
+        if (selfChessComponent.isNew || otherChessComponent.isNew) return;
+        if (selfChessComponent.newMerged || otherChessComponent.newMerged) return;
 		if (selfCollider.node.name === otherCollider.node.name) {
-
-			if (otherCollider.node.getComponent(Chess).speed.x === otherCollider.node.getComponent(Chess).speed.y && !otherCollider.node.getComponent(Chess).isMerged) {
-				// 只处理self运动，other静止的碰撞情况
-				selfCollider.node.getComponent(Chess).speed = new Vec3(0,0,0)
-				tween(selfCollider.node).to(0.3, {
-					position: otherCollider.node.getPosition()
-				}).call(() => {
-					selfCollider.node.destroy();
-					otherCollider.node.destroy();
-					// otherCollider.node.getComponent(Chess).isMerged = true;
-					// otherCollider.node.getCom
-					const n = otherCollider.node.name.split('-')[1] * 2
-					this.newChess(`chess-${n}`, {x: otherCollider.node.getPosition().x / 217.5, y: otherCollider.node.getPosition().y / 217.5})
-				}).start();
-			}
+            // 做一下标记，等到下一次再次碰撞时，再做合并处理
+            if (selfBody) {
+                selfChessComponent.isStandbyMerge = true;    
+                selfChessComponent.standbyMergeNode = otherCollider.node;
+                return;
+            }
+            return;
 		}
+        // 两个不一样的node
+        if (selfBody) {
+            selfBody.enabledContactListener = false;
+            console.log('bodytype:' + selfBody.type)
+            this.scheduleOnce(() => {
+                selfBody.type = ERigidBody2DType.Static;
+                selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+            })
+        }
 	}
 	newChess(name: string, coo?: any, options?: object) {
 		if (coo && coo.x === -1) {
@@ -200,8 +220,10 @@ export default class ChessManager extends Component {
 		if (!coo) {
 			coo = this.computeChessPosition(this.getRandomChessPosition());
 		}
-		this.getChessNode(name).then(node => {
+		return this.getChessNode(name).then(node => {
+			console.log(node)
 			this.setChessInChessBoard(node, coo, options);
+            return node;
 		})
 	}
 }
