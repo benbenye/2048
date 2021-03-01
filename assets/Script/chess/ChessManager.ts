@@ -21,6 +21,7 @@ export default class ChessManager extends Component {
 
     onLoad () {
         CustomEventListener.on(Constants.EventName.MOVE, this.move, this);
+        CustomEventListener.on(Constants.EventName.COLLISION, this.testMoveOver, this);
     }
 
     // update(dt) {
@@ -38,7 +39,7 @@ export default class ChessManager extends Component {
         const repeatIndex = parent?.children.findIndex(node => {
             const nodePosition = node.getPosition();
             const rPosition = this.computeChessPosition(new Vec3(rx, ry, 0))
-            return (nodePosition.x == rPosition.x && nodePosition.y == rPosition.y)
+            return (Math.abs(nodePosition.x - rPosition.x) < 0.5 && Math.abs(nodePosition.y - rPosition.y) < 0.5)
         });
         if (repeatIndex === -1) {
             this.countRandomTime = 0;
@@ -98,9 +99,19 @@ export default class ChessManager extends Component {
             }
             
         })
+        runtimeData.beforeCollision = parent?.children.length;
+        runtimeData.collisionCount = 0;
         const vector = this.getVector(direction);
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
 		console.log(PhysicsSystem2D.instance.gravity)
+    }
+    testMoveOver () {
+        console.log(runtimeData.beforeCollision, runtimeData.collisionCount)
+        if (runtimeData.beforeCollision === runtimeData.collisionCount) {
+            console.log('move over')
+            PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
+            this.newChess('chess-2');
+        }
     }
     buildTraversals (vector: object) {
         var traversals = { x: [], y: [] };
@@ -147,7 +158,7 @@ export default class ChessManager extends Component {
 		box?.on('end-contact', this.onEndContact, this);
         console.log('ssss')
 		
-		tween(node).to(0.3, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).start()
+		tween(node).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).start()
 	}
 	onEndContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
 		selfCollider.node.position = Chess.correctPosition(selfCollider.node);
@@ -175,6 +186,8 @@ export default class ChessManager extends Component {
                 node.getComponent(RigidBody2D).type = ERigidBody2DType.Static;
                 selfCollider.node.destroy();
                 standbyMergeNode.destroy();
+                runtimeData.collisionCount ++;
+                CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
             })
             return;
         }
@@ -187,6 +200,8 @@ export default class ChessManager extends Component {
 					selfBody.type = ERigidBody2DType.Static;
 			        selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
 				})
+                runtimeData.collisionCount ++;
+                CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
 			}
             return;
 		}
@@ -210,6 +225,8 @@ export default class ChessManager extends Component {
                 selfBody.type = ERigidBody2DType.Static;
                 selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
             })
+            runtimeData.collisionCount ++;
+            CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
         }
 	}
 	newChess(name: string, coo?: any, options?: object) {
@@ -219,6 +236,7 @@ export default class ChessManager extends Component {
 		}
 		if (!coo) {
 			coo = this.computeChessPosition(this.getRandomChessPosition());
+            options = {isNew: true}
 		}
 		return this.getChessNode(name).then(node => {
 			console.log(node)

@@ -57,14 +57,7 @@ export default class GameCtrl extends Component {
 		const absDy = Math.abs(deltaY)
 		if (Math.max(absDx, absDy) > 10) {
       		// (right : left) : (down : up)
-			  console.log(11111)
 			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
-			// 移动没有完成就生成新的，可能会发生意外的碰撞导致正在移动的棋子不能完成移动
-			// 分组比较好，新棋子不参与碰撞检测
-			this.scheduleOnce(() => {
-				// PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
-				// this.newChess('chess-2');
-			}, 0.5)
     	}
 	}
 	onTouchCancel(e: EventTouch) {

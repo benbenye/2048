@@ -10,7 +10,8 @@ enum GameState {
 
 enum EventName {
     MOVE = 'move',
-    CORRECT_POSITION = 'correct_position'
+    CORRECT_POSITION = 'correct_position',
+    COLLISION = 'collision'
 }
 
 
