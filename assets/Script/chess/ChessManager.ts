@@ -170,7 +170,7 @@ export default class ChessManager extends Component {
                 standbyMergeNode.getComponent(RigidBody2D).enabledContactListener = false;
             const n = +standbyMergeNode.getChildByName('n').getComponent(Label).string
             standbyMergeNode.getChildByName('n').getComponent(Label).string = n * 2;
-            this.newChess(`chess-${2 * n}`, selfCollider.node.getPosition(), {newMerged: true}).then((node: Node) => {
+            this.newChess(`chess-${2 * n}`, Chess.correctPosition(selfCollider.node), {newMerged: true}).then((node: Node) => {
                 // 新生成的node具有Dynamic，需要值为static，防止随重力场运动
                 node.getComponent(RigidBody2D).type = ERigidBody2DType.Static;
                 selfCollider.node.destroy();
