@@ -191,7 +191,6 @@
       "__id__": 3
     },
     "_enabled": true,
-    "__prefab": null,
     "_id": "fdmYWqlUxH3pL+H3YImIr4"
   },
   {
@@ -4691,7 +4690,6 @@
       "__id__": 21
     },
     "_enabled": true,
-    "__prefab": null,
     "countRandomTime": 0,
     "_id": "27MqjJvnBBupZTGV+DGaXL"
   },
