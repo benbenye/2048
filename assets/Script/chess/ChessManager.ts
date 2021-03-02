@@ -110,11 +110,13 @@ export default class ChessManager extends Component {
         if (runtimeData.beforeCollision === runtimeData.collisionCount) {
             console.log('move over')
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
-            console.log(this)
+            const q = Promise.resolve();
             this.standbyMergeNode.forEach(node => {
-                node.active = false;
-                this.newChess(`chess-${node.name.split('-')[1] * 2}`, node.getPosition(), {newMerged: true}).then(() => {
-                    // this.newChess('chess-2');
+                q.then(() => {
+                    return this.newChess(node.name, node.getPosition(), {newMerged: false}).then(() => {
+                        node.destroy();
+                        return 1;
+                    })
                 })
                 // tween(node).to(0.1, {
                 //     scale: new Vec3(1.2, 1.2, 1)
@@ -123,6 +125,10 @@ export default class ChessManager extends Component {
                 // }).call(() => {
 
                 // }).start();
+            })
+            q.then(() => {
+                this.newChess('chess-2');
+                this.standbyMergeNode = [];
             })
         }
     }
@@ -165,9 +171,9 @@ export default class ChessManager extends Component {
 		if (chessCom) {
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
-                const body = node.getComponent(RigidBody2D);
-                body.type = ERigidBody2DType.Static;
-                body.enabledContactListener = false;
+                // const body = node.getComponent(RigidBody2D);
+                // body.type = ERigidBody2DType.Static;
+                // body.enabledContactListener = false;
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).start()
             }
@@ -196,16 +202,14 @@ export default class ChessManager extends Component {
             selfBody.enabledContactListener = false;
             const standbyMergeNode = selfChessComponent.standbyMergeNode
             // =======
-            console.log(standbyMergeNode)
             this.standbyMergeNode.push(standbyMergeNode)
-            console.log(this)
             this.scheduleOnce(() => {
                 // selfBody.type = ERigidBody2DType.Static;
                 // selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
                 if (selfCollider) selfCollider.node.destroy();
+                runtimeData.collisionCount ++;
+                this.testMoveOver();
             })
-            runtimeData.collisionCount ++;
-            this.testMoveOver();
             // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
             // =======
 
@@ -232,9 +236,9 @@ export default class ChessManager extends Component {
 				this.scheduleOnce(() => {
 					selfBody.type = ERigidBody2DType.Static;
 			        selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+                    runtimeData.collisionCount ++;
+                    this.testMoveOver();
 				})
-                runtimeData.collisionCount ++;
-                this.testMoveOver();
                 // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
 			}
             return;
@@ -242,11 +246,12 @@ export default class ChessManager extends Component {
         if (!otherChessComponent) return;
         if (selfChessComponent.isNew || otherChessComponent.isNew) return;
         if (selfChessComponent.newMerged || otherChessComponent.newMerged) return;
-		if (selfCollider.node.name === otherCollider.node.name) {
+		if (selfCollider.node.name === otherCollider.node.name && selfCollider.node.getChildByName('n')?.getComponent(Label)?.string === otherCollider.node.getChildByName('n')?.getComponent(Label)?.string) {
             // 做一下标记，等到下一次再次碰撞时，再做合并处理
             if (selfBody) {
                 selfChessComponent.isStandbyMerge = true;    
                 selfChessComponent.standbyMergeNode = otherCollider.node;
+                otherCollider.node.name = `chess-${otherCollider.node.name.split('-')[1] * 2}`
                 return;
             }
             return;
@@ -258,9 +263,9 @@ export default class ChessManager extends Component {
             this.scheduleOnce(() => {
                 selfBody.type = ERigidBody2DType.Static;
                 selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+                runtimeData.collisionCount ++;
+                this.testMoveOver();
             })
-            runtimeData.collisionCount ++;
-            this.testMoveOver();
             // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
         }
 	}
