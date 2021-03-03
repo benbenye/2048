@@ -16,7 +16,7 @@ export default class RunTimeData {
     public dimensionY = 4;
     public chessWidth = 217.5;
     // public chessMargin = 30;
-    public gravity = 300;
+    public gravity = 800;
     public speed = 30;
     public beforeCollision = 0;
     public collisionCount = 0;

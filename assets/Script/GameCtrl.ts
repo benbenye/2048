@@ -1,4 +1,5 @@
 import { _decorator, Component, find, Vec3, tween, Node, systemEvent, SystemEvent, EventTouch, Vec2, ITriggerEvent, BoxCollider2D, PhysicsSystem2D, Contact2DType, RigidBody2D, RigidBodyComponent, PhysicsSystem, RigidBody } from 'cc';
+import { game, Game, EPhysics2DDrawFlags } from "cc";
 const { ccclass, property } = _decorator;
 import ChessManager from './chess/ChessManager';
 import Chess from './chess/Chess';
@@ -25,7 +26,7 @@ export default class GameCtrl extends Component {
 	async start () {
 		this.playAreaNode = find('Canvas').getChildByName('Cell');
 		const node = await this.chessManager.getChessNode('chess-2')
-		const node1 = await this.chessManager.getChessNode('chess-2')
+		const node1 = await this.chessManager.getChessNode('chess-4')
 		this.chessManager.setChessInChessBoard(node, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.chessManager.setChessInChessBoard(node1, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.initEventListener();
@@ -82,3 +83,8 @@ export default class GameCtrl extends Component {
         console.log(e)
     }
 }
+
+
+game.on(Game.EVENT_GAME_INITED, () => {
+    PhysicsSystem2D.instance.debugDrawFlags = 1
+})

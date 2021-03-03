@@ -1,4 +1,4 @@
-import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType } from 'cc';
+import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType, VerticalTextAlignment } from 'cc';
 const { ccclass, property } = _decorator;
 
 import Chess from './Chess';
@@ -22,6 +22,11 @@ export default class ChessManager extends Component {
     onLoad () {
         CustomEventListener.on(Constants.EventName.MOVE, this.move, this);
         // CustomEventListener.on(Constants.EventName.COLLISION, this.testMoveOver, this);
+        // console.log(find('Canvas/Cell/colliderBox/wall_top'))
+        find('Canvas/Cell/colliderBox/wall_top').getComponent(BoxCollider2D).on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this)
+        find('Canvas/Cell/colliderBox/wall_bottom').getComponent(BoxCollider2D).on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this)
+        find('Canvas/Cell/colliderBox/wall_right').getComponent(BoxCollider2D).on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this)
+        find('Canvas/Cell/colliderBox/wall_left').getComponent(BoxCollider2D).on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this)
     }
 
     // update(dt) {
@@ -39,6 +44,7 @@ export default class ChessManager extends Component {
         const repeatIndex = parent?.children.findIndex(node => {
             const nodePosition = node.getPosition();
             const rPosition = this.computeChessPosition(new Vec3(rx, ry, 0))
+            console.log(nodePosition.x - rPosition.x, nodePosition.y - rPosition.y)
             return (Math.abs(nodePosition.x - rPosition.x) < 0.5 && Math.abs(nodePosition.y - rPosition.y) < 0.5)
         });
         if (repeatIndex === -1) {
@@ -86,27 +92,63 @@ export default class ChessManager extends Component {
         // (right : left) : (down : up)
         //   (1 : 3) :2 : 0
         const parent = find('Canvas/Cell/numberNode');
+        const vector = this.getVector(direction);
+        if (vector.x) {
+            find('Canvas/Cell/colliderBox/wall_left').getComponent(RigidBody2D).enabledContactListener = true;
+            find('Canvas/Cell/colliderBox/wall_right').getComponent(RigidBody2D).enabledContactListener = true;
+            find('Canvas/Cell/colliderBox/wall_top').getComponent(RigidBody2D).enabledContactListener = false;
+            find('Canvas/Cell/colliderBox/wall_bottom').getComponent(RigidBody2D).enabledContactListener = false;
+        }
+        if (vector.y) {
+            find('Canvas/Cell/colliderBox/wall_left').getComponent(RigidBody2D).enabledContactListener = false;
+            find('Canvas/Cell/colliderBox/wall_right').getComponent(RigidBody2D).enabledContactListener = false;
+            find('Canvas/Cell/colliderBox/wall_top').getComponent(RigidBody2D).enabledContactListener = true;
+            find('Canvas/Cell/colliderBox/wall_bottom').getComponent(RigidBody2D).enabledContactListener = true;
+        }
         parent?.children.forEach(node => {
             const bodyComponent = node.getComponent(RigidBody2D);
             const chessComponent = node.getComponent(Chess);
+            const boxComponent = node.getComponent(BoxCollider2D);
+            
             if (bodyComponent) {
-                bodyComponent.enabledContactListener = true;
-                bodyComponent.type = ERigidBody2DType.Dynamic;
+                // bodyComponent.enabledContactListener = false;
+                // bodyComponent.type = ERigidBody2DType.Dynamic;
+                // bodyComponent.linearVelocity = new Vec2(vector.x* runtimeData.speed, vector.y* runtimeData.speed);
             }
             if (chessComponent) {
                 chessComponent.isNew = false;
                 chessComponent.newMerged = false;
             }
+            if (boxComponent) {
+                if (vector.x) {
+                    boxComponent.size.width = 216.5;
+                    boxComponent.size.height = 200;
+                    boxComponent.apply();
+                }
+                if (vector.y) {
+                    boxComponent.size.width = 200;
+                    boxComponent.size.height = 216.5;
+                    boxComponent.apply();
+                }
+            }
             
         })
         runtimeData.beforeCollision = parent?.children.length;
         runtimeData.collisionCount = 0;
-        const vector = this.getVector(direction);
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
-		console.log(PhysicsSystem2D.instance.gravity)
+		console.log(PhysicsSystem2D.instance.gravity) 
     }
     testMoveOver () {
         console.log(runtimeData.beforeCollision, runtimeData.collisionCount)
+        
+        const parent = find('Canvas/Cell/numberNode');
+        const movingNode = parent?.children.filter(node => {
+            const body = node.getComponent(RigidBody2D);
+            if (body) 
+                return Math.abs(body.linearVelocity.x) > 5 || Math.abs(body.linearVelocity.y) > 5
+        }).length
+
+        // if (!movingNode) {
         if (runtimeData.beforeCollision === runtimeData.collisionCount) {
             console.log('move over')
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
@@ -190,15 +232,106 @@ export default class ChessManager extends Component {
 		otherCollider.node.position = Chess.correctPosition(otherCollider.node);
 	}
 
+
 	onBeginContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
-        // self 运动中的，other停下来的
-		const selfBody = selfCollider.node.getComponent(RigidBody2D);
-		const otherBody = otherCollider.node.getComponent(RigidBody2D);
+        console.log('starting')
+		const otherBody = otherCollider.body;
+		const selfBody = selfCollider.body;
         const selfChessComponent = selfCollider.node.getComponent(Chess);
         const otherChessComponent = otherCollider.node.getComponent(Chess);
+        if (!selfBody || !otherBody) return;
+        if (!selfBody.enabledContactListener) return;
+        if (selfCollider.node.name.match('wall')) {
+            console.log('撞墙了')
+            selfBody.enabledContactListener = false;
+            otherBody.enabledContactListener = true;
+            return;
+        }
+        if (!selfChessComponent) return;
+        if (selfChessComponent.isStandbyMerge) {
+            console.log('开始合并了')
+            selfChessComponent.standbyMergeNode.destroy();
+
+            selfCollider.name = `chess-${selfCollider.name.split('-')[1] * 2}`
+            selfChessComponent.isStandbyMerge = false;
+            return;
+        }
+        if (!otherChessComponent) return;
+        const worldManifold = contact.getWorldManifold();
+        const points = worldManifold.points
+        if (points.length) {
+            console.log('筛选是否回弹碰撞...')
+            let pointVelSelf = new Vec2;
+            let pointVelOther = new Vec2;
+            let relativeVel = new Vec2;
+            let relativePoint = new Vec2;
+            selfBody.getLinearVelocityFromWorldPoint(points[0], pointVelSelf);
+            otherBody.getLinearVelocityFromWorldPoint(points[0], pointVelOther);
+            console.log(points[0])
+            console.log(selfCollider, otherCollider)
+            console.log(pointVelSelf, pointVelOther)
+            selfBody.getLocalVector(pointVelOther.subtract(pointVelSelf), relativeVel);
+            console.log(relativeVel)
+            const gravity = PhysicsSystem2D.instance.gravity
+            if ((gravity.x && gravity.x * relativeVel.x >= 0) || (gravity.y && gravity.y * relativeVel.y >= 0)) {
+                // 无效
+                // store disabled state to contact
+                console.log('ignore')
+                contact.disabled = true;
+                return;
+            }
+        }
+        if (selfChessComponent.num === otherChessComponent.num) {
+            console.log('准备合并了')
+            selfChessComponent.isStandbyMerge = true;
+            selfChessComponent.standbyMergeNode = selfCollider.node;
+            // selfBody.enabledContactListener = false;
+            // otherBody.enabledContactListener = true;
+            contact.disabled = true;
+            return;
+        }
+        console.log('不同的node')
+        selfBody.enabledContactListener = false;
+        otherBody.enabledContactListener = true;
+
+
+    }
+
+	onBeginContact1 (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
+        // self 运动中的，other停下来的
+        // contact.disabled = true;
+        console.log('starting')
+		const otherBody = otherCollider.body;
+		const selfBody = selfCollider.body;
+        const selfChessComponent = selfCollider.node.getComponent(Chess);
+        const otherChessComponent = otherCollider.node.getComponent(Chess);
+        const worldManifold = contact.getWorldManifold();
+        const points = worldManifold.points
+        // if (points.length) {
+        //     let pointVelSelf = new Vec2;
+        //     let pointVelOther = new Vec2;
+        //     let relativeVel = new Vec2;
+        //     let relativePoint = new Vec2;
+        //     selfBody.getLinearVelocityFromWorldPoint(points[0], pointVelSelf);
+        //     otherBody.getLinearVelocityFromWorldPoint(points[0], pointVelOther);
+        //     // console.log(points[0])
+        //     // console.log(selfCollider, otherCollider)
+        //     // console.log(pointVelSelf, pointVelOther)
+        //     selfBody.getLocalVector(pointVelOther.subtract(pointVelSelf), relativeVel);
+        //     // console.log(relativeVel)
+        //     const gravity = PhysicsSystem2D.instance.gravity
+        //     if ((gravity.x && gravity.x * relativeVel.x >= 0) || (gravity.y && gravity.y * relativeVel.y >= 0)) {
+        //         // 无效
+        //         // store disabled state to contact
+        //         console.log('ignore')
+        //         contact.disabled = true;
+        //         return;
+        //     }
+        // }
+
         if (!selfChessComponent || !selfBody)  return;
         if (selfChessComponent.isStandbyMerge) {
-            // merge
+            console.log('merging')
             selfBody.enabledContactListener = false;
             const standbyMergeNode = selfChessComponent.standbyMergeNode
             // =======
@@ -230,44 +363,50 @@ export default class ChessManager extends Component {
         }
 
 		if (otherCollider.node.name.match('wall')) {
-			if (selfBody) {
-				selfBody.enabledContactListener = false;
-                console.log('bodytype:' + selfBody.type)
-				this.scheduleOnce(() => {
-					selfBody.type = ERigidBody2DType.Static;
-			        selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
-                    runtimeData.collisionCount ++;
-                    this.testMoveOver();
-				})
-                // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
-			}
+            console.log('wall')
+            selfBody.enabledContactListener = false;
+            // contact.disabled = true;
+            // this.scheduleOnce(() => {
+            // 	selfBody.type = ERigidBody2DType.Static;
+            //     selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+                runtimeData.collisionCount ++;
+                this.testMoveOver();
+            // })
+            // contact.disabled = true;
+            // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
             return;
 		}
+        console.log(otherChessComponent)
         if (!otherChessComponent) return;
         if (selfChessComponent.isNew || otherChessComponent.isNew) return;
         if (selfChessComponent.newMerged || otherChessComponent.newMerged) return;
+        if (!selfBody.enabledContactListener) {
+            console.log('回弹')
+            contact.enabled = true;
+            return;
+        }
+        console.log('====', selfCollider.node.name, otherCollider.node.name, selfCollider.node.getChildByName('n')?.getComponent(Label)?.string, otherCollider.node.getChildByName('n')?.getComponent(Label)?.string)
 		if (selfCollider.node.name === otherCollider.node.name && selfCollider.node.getChildByName('n')?.getComponent(Label)?.string === otherCollider.node.getChildByName('n')?.getComponent(Label)?.string) {
+            console.log('standbyMerge')
             // 做一下标记，等到下一次再次碰撞时，再做合并处理
-            if (selfBody) {
-                selfChessComponent.isStandbyMerge = true;    
-                selfChessComponent.standbyMergeNode = otherCollider.node;
-                otherCollider.node.name = `chess-${otherCollider.node.name.split('-')[1] * 2}`
-                return;
-            }
+            selfChessComponent.isStandbyMerge = true;    
+            selfChessComponent.standbyMergeNode = otherCollider.node;
+            otherCollider.node.name = `chess-${otherCollider.node.name.split('-')[1] * 2}`
+            contact.disabled = true;
             return;
 		}
         // 两个不一样的node
-        if (selfBody) {
-            selfBody.enabledContactListener = false;
-            console.log('bodytype:' + selfBody.type)
-            this.scheduleOnce(() => {
-                selfBody.type = ERigidBody2DType.Static;
-                selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
-                runtimeData.collisionCount ++;
-                this.testMoveOver();
-            })
-            // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
-        }
+        console.log('diffrent node')
+        selfBody.enabledContactListener = false;
+        // contact.disabled = true;
+        console.log('bodytype:' + selfBody.type)
+        // this.scheduleOnce(() => {
+        //     selfBody.type = ERigidBody2DType.Static;
+        //     selfCollider.node.setPosition(Chess.correctPosition(selfCollider.node))
+            runtimeData.collisionCount ++;
+            this.testMoveOver();
+        // })
+        // CustomEventListener.dispatchEvent(Constants.EventName.COLLISION)
 	}
 	newChess(name: string, coo?: any, options?: object) {
 		if (coo && coo.x === -1) {

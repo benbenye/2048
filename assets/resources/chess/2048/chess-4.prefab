@@ -493,7 +493,7 @@
     },
     "cooX": 0,
     "cooY": 0,
-    "num": 0,
+    "num": 2,
     "bgColor": "",
     "fontColor": "",
     "fontSize": 50,
@@ -517,7 +517,7 @@
     "tag": 0,
     "_group": 1,
     "_density": 1,
-    "_sensor": true,
+    "_sensor": false,
     "_friction": 0,
     "_restitution": 0,
     "_offset": {
@@ -527,8 +527,8 @@
     },
     "_size": {
       "__type__": "cc.Size",
-      "width": 208,
-      "height": 208
+      "width": 210,
+      "height": 210
     },
     "_id": ""
   },
