@@ -10,32 +10,37 @@
     "collisionGroups": [
       {
         "index": 1,
-        "name": "wall"
+        "name": "chess-2"
       },
       {
         "index": 2,
-        "name": "chess2"
+        "name": "chess-4"
       },
       {
         "index": 3,
-        "name": "chess4"
+        "name": "chess-8"
       },
       {
         "index": 4,
-        "name": "chess8"
+        "name": "chess-16"
       },
       {
         "index": 28,
         "name": "chess"
+      },
+      {
+        "index": 30,
+        "name": "wall"
       }
     ],
     "collisionMatrix": {
       "0": 1,
-      "1": 30,
-      "2": 26,
-      "3": 22,
-      "4": 268435470,
-      "28": 16
+      "1": 1073741852,
+      "2": 1073741850,
+      "3": 1073741846,
+      "4": 1342177294,
+      "28": 1073741840,
+      "30": 268435486
     },
     "autoSimulation": true,
     "gravity": {

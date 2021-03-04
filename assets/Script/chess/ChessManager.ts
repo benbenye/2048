@@ -110,12 +110,20 @@ export default class ChessManager extends Component {
             
         })
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
+        this.scheduleOnce(this.testMoveOver, 1)
     }
     testMoveOver () {
         console.log(this.countMoveNode, this.collisionNode)
         
         const parent = find('Canvas/Cell/numberNode');
-        if(Array.from(this.countMoveNode).length === parent?.children.length) {
+        const isAllStatic = parent?.children.every(node => {
+            const linearVelocity = node.getComponent(RigidBody2D).linearVelocity;
+            return linearVelocity.x === 0 && linearVelocity.y === 0
+        })
+        if (!isAllStatic) {
+            this.scheduleOnce(this.testMoveOver, 0.1)
+            return;
+        }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
             this.countMoveNode.clear();
@@ -126,7 +134,6 @@ export default class ChessManager extends Component {
                 runtimeData.gameState = Constants.GameState.NEW_CHESS;
                 this.newChess('chess-2');
                 // this.standbyMergeNode = [];
-        }
     }
     getVector (direction: number) {
         const map = [
@@ -207,24 +214,26 @@ export default class ChessManager extends Component {
 		const parent = find('Canvas/Cell/chessPlaceHolder');
         mergeChess.forEach(chessArr => {
             chessArr.forEach(node => {
-                node.getComponent(RigidBody2D).awake = false;
+                // node.getComponent(RigidBody2D).awake = false;
+                console.log()
+                node.getComponent(BoxCollider2D).group = 268435456;
                 this.scheduleOnce(() => {
-                    node.destroy();
+                    // node.destroy();
                 })
             }); 
-            const holderNode = new Node('holder')
-            const UI = holderNode.addComponent(UITransform)
-            const body = holderNode.addComponent(RigidBody2D)
-            const box = holderNode.addComponent(BoxCollider2D)
-            UI.width = box.size.width = 216
-            UI.height = box.size.height = 216
-            // body.type
-            console.log(parent)
-            // const holderNode = instantiate(parent.children[0])
-            holderNode.setPosition(chessArr[0].position)
-            console.log(holderNode)
-            // holderNode.active = true;
-            holderNode.parent = parent;
+            // const holderNode = new Node('holder')
+            // const UI = holderNode.addComponent(UITransform)
+            // const body = holderNode.addComponent(RigidBody2D)
+            // const box = holderNode.addComponent(BoxCollider2D)
+            // UI.width = box.size.width = 216
+            // UI.height = box.size.height = 216
+            // // body.type
+            // console.log(parent)
+            // // const holderNode = instantiate(parent.children[0])
+            // holderNode.setPosition(chessArr[0].position)
+            // console.log(holderNode)
+            // // holderNode.active = true;
+            // holderNode.parent = parent;
         });
 
     }
