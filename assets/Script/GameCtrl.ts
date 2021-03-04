@@ -2,10 +2,8 @@ import { _decorator, Component, find, Vec3, tween, Node, systemEvent, SystemEven
 import { game, Game, EPhysics2DDrawFlags } from "cc";
 const { ccclass, property } = _decorator;
 import ChessManager from './chess/ChessManager';
-import Chess from './chess/Chess';
 import { CustomEventListener } from './data/CustumerLisenter';
 import Constants from './data/Constants';
-import RunTimeData from './data/RuntimeData';
 
 @ccclass
 export default class GameCtrl extends Component {
@@ -26,7 +24,7 @@ export default class GameCtrl extends Component {
 	async start () {
 		this.playAreaNode = find('Canvas').getChildByName('Cell');
 		const node = await this.chessManager.getChessNode('chess-2')
-		const node1 = await this.chessManager.getChessNode('chess-4')
+		const node1 = await this.chessManager.getChessNode('chess-2')
 		this.chessManager.setChessInChessBoard(node, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.chessManager.setChessInChessBoard(node1, this.chessManager.computeChessPosition(this.chessManager.getRandomChessPosition()), {isNew: true});
 		this.initEventListener();
@@ -59,6 +57,7 @@ export default class GameCtrl extends Component {
 		if (Math.max(absDx, absDy) > 10) {
       		// (right : left) : (down : up)
 			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
+
     	}
 	}
 	onTouchCancel(e: EventTouch) {

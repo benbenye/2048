@@ -9,18 +9,33 @@
   "physics": {
     "collisionGroups": [
       {
+        "index": 1,
+        "name": "wall"
+      },
+      {
         "index": 2,
         "name": "chess2"
       },
       {
         "index": 3,
         "name": "chess4"
+      },
+      {
+        "index": 4,
+        "name": "chess8"
+      },
+      {
+        "index": 28,
+        "name": "chess"
       }
     ],
     "collisionMatrix": {
       "0": 1,
-      "2": 0,
-      "3": 0
+      "1": 30,
+      "2": 26,
+      "3": 22,
+      "4": 268435470,
+      "28": 16
     },
     "autoSimulation": true,
     "gravity": {

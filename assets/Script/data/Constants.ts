@@ -3,9 +3,11 @@ const { ccclass, property } = _decorator;
 
 enum GameState {
     IDLE = 'idle',
-    PLAYING = 'playing',
+    MOVING = 'moving',
+    MOVE_OVER = 'move_over',
+    NEW_CHESS = 'new_chess',
     PAUSE = 'pause',
-    OVER = 'over'
+    GAME_OVER = 'game_over'
 }
 
 enum EventName {

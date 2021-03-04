@@ -1,4 +1,5 @@
 import { _decorator, Component, Node, Label } from 'cc';
+import Constants from './Constants';
 const { ccclass, property } = _decorator;
 
 @ccclass('RunTimeData')
@@ -20,4 +21,5 @@ export default class RunTimeData {
     public speed = 30;
     public beforeCollision = 0;
     public collisionCount = 0;
+    public gameState = Constants.GameState.IDLE;
 }
