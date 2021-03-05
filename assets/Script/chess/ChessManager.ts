@@ -110,7 +110,9 @@ export default class ChessManager extends Component {
             
         })
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
-        this.scheduleOnce(this.testMoveOver, 1)
+        // this.scheduleOnce(this.testMoveOver, 1)
+
+        this.testMoveOver();
     }
     testMoveOver () {
         console.log(this.countMoveNode, this.collisionNode)
@@ -126,7 +128,7 @@ export default class ChessManager extends Component {
         }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
-            this.countMoveNode.clear();
+            // this.countMoveNode.clear();
             this.collisionNode = new WeakMap();
             runtimeData.beforeCollision = parent?.children.length;
             runtimeData.collisionCount = 0;

@@ -4,6 +4,7 @@ const { ccclass, property } = _decorator;
 import ChessManager from './chess/ChessManager';
 import { CustomEventListener } from './data/CustumerLisenter';
 import Constants from './data/Constants';
+import TouchManager from './util/touchManager';
 
 @ccclass
 export default class GameCtrl extends Component {
@@ -32,7 +33,7 @@ export default class GameCtrl extends Component {
 	initEventListener() {
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_START, this.onTouchStart, this)
 		this.playAreaNode.on(SystemEvent.EventType.TOUCH_MOVE, this.onTouchMove, this)
-		this.playAreaNode.on(SystemEvent.EventType.TOUCH_END, this.onTouchEnd, this)
+		this.playAreaNode.on(SystemEvent.EventType.TOUCH_END, TouchManager.onTouchEnd, this)
 		// this.playAreaNode.on(SystemEvent.EventType.TOUCH_CANCEL, this.onTouchEnd, this)
 	}
 
@@ -57,7 +58,6 @@ export default class GameCtrl extends Component {
 		if (Math.max(absDx, absDy) > 10) {
       		// (right : left) : (down : up)
 			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
-
     	}
 	}
 	onTouchCancel(e: EventTouch) {
