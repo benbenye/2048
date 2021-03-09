@@ -32,7 +32,7 @@ export default class ChessManager extends Component {
         CustomEventListener.on(Constants.EventName.MOVE, this.move, this);
 		this.playAreaNode = find('Canvas').getChildByName('Cell');
         this.newChess('chess-2').then(() => {
-            this.newChess('chess-2')
+            this.newChess('chess-4')
         }).then(() => {this.initEventListener()})
     }
 	initEventListener() {
@@ -81,8 +81,9 @@ export default class ChessManager extends Component {
             const nodePosition = node.getPosition();
             const rPosition = this.computeChessPosition(new Vec3(rx, ry, 0))
             console.log(nodePosition.x - rPosition.x, nodePosition.y - rPosition.y)
-            return (Math.abs(nodePosition.x - rPosition.x) < 0.5 && Math.abs(nodePosition.y - rPosition.y) < 0.5)
+            return (Math.abs(nodePosition.x - rPosition.x) < 0.5 * runtimeData.chessWidth && Math.abs(nodePosition.y - rPosition.y) < 0.5 * runtimeData.chessWidth)
         });
+        console.log(`repeatIndex: ${repeatIndex}`);
         if (repeatIndex === -1) {
             this.countRandomTime = 0;
             return new Vec3(rx, ry, 0);
@@ -144,14 +145,13 @@ export default class ChessManager extends Component {
                 if (vector.x) {
                     boxComponent.size.width = 216.5;
                     boxComponent.size.height = 200;
-                    boxComponent.apply();
                 }
                 if (vector.y) {
                     boxComponent.size.width = 200;
                     boxComponent.size.height = 216.5;
-                    boxComponent.apply();
                 }
-                boxComponent.group = Math.pow(2, +node.name.split('-')[1]);
+                boxComponent.group = +node.name.split('-')[1];
+                boxComponent.apply();
             }
             
         })
@@ -172,8 +172,8 @@ export default class ChessManager extends Component {
             this.testRepeatPositionChess();
             this.collisionNode = new WeakMap();
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
-                runtimeData.gameState = Constants.GameState.NEW_CHESS;
-                this.newChess('chess-2');
+            runtimeData.gameState = Constants.GameState.NEW_CHESS;
+            this.newChess('chess-2');
     }
     getVector (direction: number) {
         const map = [
@@ -198,6 +198,7 @@ export default class ChessManager extends Component {
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
                 box.group = 268435456;
+                box.apply();
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).call(() => {
                     runtimeData.gameState = Constants.GameState.IDLE;
@@ -219,7 +220,7 @@ export default class ChessManager extends Component {
         console.log(this.countMoveNode, this.collisionNode)
         const otherBody = otherCollider.body;
         const selfChess = selfCollider.node.getComponent(Chess);
-        const otherChess = selfCollider.node.getComponent(Chess);
+        const otherChess = otherCollider.node.getComponent(Chess);
         if (!otherBody || !selfChess) return;
 
         if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
@@ -229,12 +230,16 @@ export default class ChessManager extends Component {
             console.log(this.countCollision)
             return;
         }
+        console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfChess: ${selfChess}, isStatic: ${selfChess?.isStatic}, position: ${selfCollider.node.position}`)
+        console.log(`方向：${this.vectorFlag}, otherName: ${otherCollider.node.name}, otherChess: ${otherChess}, isStatic: ${otherChess?.isStatic}, position: ${otherCollider.node.position}`)
         if (!otherChess) return;
-        if (!otherChess.isStatic) return 
-        selfChess.isStatic = true;
-        this.countCollision += 1;
-        this.testMoveOver();
-        console.log(this.countCollision)
+        if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
+            // 有效方向的碰撞
+            otherChess.isStatic = true;
+            this.countCollision += 1;
+            console.log(this.countCollision)
+            this.testMoveOver();
+        }
     }
 
     testRepeatPositionChess() {
