@@ -1,4 +1,4 @@
-import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType, VerticalTextAlignment, UITransform, EventTouch, SystemEvent } from 'cc';
+import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType, VerticalTextAlignment, UITransform, EventTouch, SystemEvent, TERRAIN_NORTH_INDEX } from 'cc';
 const { ccclass, property } = _decorator;
 
 import Chess from './Chess';
@@ -14,7 +14,7 @@ const dimensionY = runtimeData.dimensionY;
 export default class ChessManager extends Component {
     standbyMergeNode: Node[] = [];
 
-    collisionNode: WeakMap<Node, Set<Node>> = new WeakMap();
+    sameCollisionNode: WeakMap<Node, Set<Node>> = new WeakMap();
     countMoveNode: object = {};
     countCollision: number = 0;
 
@@ -135,6 +135,7 @@ export default class ChessManager extends Component {
         parent?.children.forEach(node => {
             const chessComponent = node.getComponent(Chess);
             const boxComponent = node.getComponent(BoxCollider2D);
+            const bodyComponent = node.getComponent(RigidBody2D);
             
             if (chessComponent) {
                 chessComponent.isNew = false;
@@ -153,6 +154,10 @@ export default class ChessManager extends Component {
                 boxComponent.group = +node.name.split('-')[1];
                 boxComponent.apply();
             }
+            if (bodyComponent) {
+                // bodyComponent.type = ERigidBody2DType.Dynamic;
+                bodyComponent.linearDamping = 0;
+            }
             
         })
         this.countCollision = 0;
@@ -169,6 +174,11 @@ export default class ChessManager extends Component {
         }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
+            parent?.children.forEach(node => {
+                this.scheduleOnce(() => {
+                    node.getComponent(RigidBody2D).linearDamping = 9999
+                })
+            })
             this.testRepeatPositionChess();
             this.collisionNode = new WeakMap();
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
@@ -198,6 +208,8 @@ export default class ChessManager extends Component {
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
                 box.group = 268435456;
+                // box.size.width = 10;
+                // box.size.height = 10;
                 box.apply();
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).call(() => {
@@ -219,13 +231,24 @@ export default class ChessManager extends Component {
         console.log(otherCollider.node.name + otherCollider.body?.linearVelocity)
         console.log(this.countMoveNode, this.collisionNode)
         const otherBody = otherCollider.body;
+        const selfBody = selfCollider.body;
         const selfChess = selfCollider.node.getComponent(Chess);
         const otherChess = otherCollider.node.getComponent(Chess);
-        if (!otherBody || !selfChess) return;
+        if (!otherBody || !selfChess || !selfBody) return;
 
         if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
             selfChess.isStatic = true;
             this.countCollision += 1;
+            //---
+            if (this.sameCollisionNode.has(otherCollider.node)) {
+                this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
+            } else {
+                const w = new Set();
+                w.add(selfCollider.node)
+                this.sameCollisionNode.set(otherCollider.node, w);
+            }
+            // 改变box的分组，也许可以
+            //--
             this.testMoveOver();
             console.log(this.countCollision)
             return;
@@ -236,6 +259,10 @@ export default class ChessManager extends Component {
         if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
             // 有效方向的碰撞
             otherChess.isStatic = true;
+            // otherBody.linearDamping = 9999
+            this.scheduleOnce(() => {
+                // otherBody.type = ERigidBody2DType.Static;
+            })
             this.countCollision += 1;
             console.log(this.countCollision)
             this.testMoveOver();
