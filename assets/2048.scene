@@ -3625,7 +3625,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "wall_top",
+    "_name": "wall_top_01",
     "_objFlags": 0,
     "_parent": {
       "__id__": 154
@@ -3835,7 +3835,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "wall_right",
+    "_name": "wall_right_10",
     "_objFlags": 0,
     "_parent": {
       "__id__": 154
@@ -4045,7 +4045,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "wall_bottom",
+    "_name": "wall_bottom_0-1",
     "_objFlags": 0,
     "_parent": {
       "__id__": 154
@@ -4255,7 +4255,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "wall_left",
+    "_name": "wall_left_-10",
     "_objFlags": 0,
     "_parent": {
       "__id__": 154

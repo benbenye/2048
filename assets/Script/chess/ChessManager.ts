@@ -1,4 +1,4 @@
-import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType, VerticalTextAlignment, UITransform } from 'cc';
+import { _decorator, Component, loader, Prefab, assetManager, resources, instantiate, Node, RigidBody2D, Vec2, PhysicsSystem2D, Vec3, tween, find, BoxCollider2D, Contact2DType, ERigidBody2DType, Label, ECollider2DType, VerticalTextAlignment, UITransform, EventTouch, SystemEvent } from 'cc';
 const { ccclass, property } = _decorator;
 
 import Chess from './Chess';
@@ -16,14 +16,58 @@ export default class ChessManager extends Component {
 
     collisionNode: WeakMap<Node, Set<Node>> = new WeakMap();
     countMoveNode: object = {};
+    countCollision: number = 0;
 
     @property
     countRandomTime: number = 0;
     _chessPrefab = new Map<string, Prefab>();
+	playAreaNode: Node = new Node();
+	touchStartLocation: Vec2 = new Vec2(0,0);
+	touchStartState: boolean = false;
+	touchMoveState: boolean = false;
+	touchEndState: boolean = false;
+    vectorFlag: string = '00';
 
     onLoad () {
         CustomEventListener.on(Constants.EventName.MOVE, this.move, this);
+		this.playAreaNode = find('Canvas').getChildByName('Cell');
+        this.newChess('chess-2').then(() => {
+            this.newChess('chess-2')
+        }).then(() => {this.initEventListener()})
     }
+	initEventListener() {
+		this.playAreaNode.on(SystemEvent.EventType.TOUCH_START, this.onTouchStart, this)
+		this.playAreaNode.on(SystemEvent.EventType.TOUCH_MOVE, this.onTouchMove, this)
+		this.playAreaNode.on(SystemEvent.EventType.TOUCH_END, this.onTouchEnd, this)
+		// this.playAreaNode.on(SystemEvent.EventType.TOUCH_CANCEL, this.onTouchEnd, this)
+	}
+	onTouchStart(e: EventTouch) {
+		this.touchStartState = true;
+		this.touchStartLocation = e.getLocation();
+	}
+	onTouchMove(e: EventTouch) {
+		if (!this.touchStartState) return;
+		this.touchMoveState = true;
+	}
+	onTouchEnd(e: EventTouch) {
+		if (!this.touchMoveState) return;
+		this.touchEndState = true;
+		this.touchStartState = false;
+		this.touchMoveState = false;
+		const deltaX = e.getLocation().x - this.touchStartLocation.x;
+		const deltaY = e.getLocation().y - this.touchStartLocation.y;
+		const absDx = Math.abs(deltaX)
+		const absDy = Math.abs(deltaY)
+		if (Math.max(absDx, absDy) > 10) {
+      		// (right : left) : (down : up)
+			CustomEventListener.dispatchEvent(Constants.EventName.MOVE, absDx > absDy ? (deltaX > 0 ? 1 : 3) : deltaY > 0 ? 0 : 2)
+    	}
+	}
+	onTouchCancel(e: EventTouch) {
+		this.touchStartState = false;
+		this.touchMoveState = false;
+		this.touchEndState = false;
+	}
 
     getRandomChessPosition (x: number = -1, y: number = -1) {
         const rx = x === -1 ? Math.floor(Math.random() * dimensionX) : x;
@@ -86,14 +130,15 @@ export default class ChessManager extends Component {
         runtimeData.gameState = Constants.GameState.MOVING;
         const parent = find('Canvas/Cell/numberNode');
         const vector = this.getVector(direction);
+        this.vectorFlag = `${vector.x}${vector.y}`;
         parent?.children.forEach(node => {
-            const bodyComponent = node.getComponent(RigidBody2D);
             const chessComponent = node.getComponent(Chess);
             const boxComponent = node.getComponent(BoxCollider2D);
             
             if (chessComponent) {
                 chessComponent.isNew = false;
                 chessComponent.newMerged = false;
+                chessComponent.isStatic = false;
             }
             if (boxComponent) {
                 if (vector.x) {
@@ -106,36 +151,29 @@ export default class ChessManager extends Component {
                     boxComponent.size.height = 216.5;
                     boxComponent.apply();
                 }
+                boxComponent.group = Math.pow(2, +node.name.split('-')[1]);
             }
             
         })
+        this.countCollision = 0;
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
-        // this.scheduleOnce(this.testMoveOver, 1)
 
-        this.testMoveOver();
     }
     testMoveOver () {
         console.log(this.countMoveNode, this.collisionNode)
         
         const parent = find('Canvas/Cell/numberNode');
-        const isAllStatic = parent?.children.every(node => {
-            const linearVelocity = node.getComponent(RigidBody2D).linearVelocity;
-            return linearVelocity.x === 0 && linearVelocity.y === 0
-        })
+        const isAllStatic = parent?.children.length === this.countCollision
         if (!isAllStatic) {
-            this.scheduleOnce(this.testMoveOver, 0.1)
             return;
         }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
-            // this.countMoveNode.clear();
+            this.testRepeatPositionChess();
             this.collisionNode = new WeakMap();
-            runtimeData.beforeCollision = parent?.children.length;
-            runtimeData.collisionCount = 0;
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
                 runtimeData.gameState = Constants.GameState.NEW_CHESS;
                 this.newChess('chess-2');
-                // this.standbyMergeNode = [];
     }
     getVector (direction: number) {
         const map = [
@@ -150,18 +188,16 @@ export default class ChessManager extends Component {
 	setChessInChessBoard(node: Node, position: Vec3, options?: any) {
 		const parent = find('Canvas/Cell/numberNode');
 		
-		node.setPosition(position)
 		const chessCom = node.getComponent(Chess);
         
+		node.setPosition(position)
 		node.parent = parent;
         const box = node.getComponent(BoxCollider2D);
-		box?.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
-		if (chessCom) {
+		if (chessCom && box) {
+		    box.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
-                // const body = node.getComponent(RigidBody2D);
-                // body.type = ERigidBody2DType.Static;
-                // body.enabledContactListener = false;
+                box.group = 268435456;
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).call(() => {
                     runtimeData.gameState = Constants.GameState.IDLE;
@@ -181,26 +217,30 @@ export default class ChessManager extends Component {
         console.log(selfCollider.node.name + selfCollider.body?.linearVelocity)
         console.log(otherCollider.node.name + otherCollider.body?.linearVelocity)
         console.log(this.countMoveNode, this.collisionNode)
-        const points = contact.getWorldManifold().points;
-        // if(this.collisionNode.has(selfCollider.node)) {
-        //     const index = this.collisionNode.get(selfCollider.node)?.findIndex(({node, points}) => node === otherCollider.node)
-        //     if (index !== -1) {
-        //         return;
-        //     }
-        //     this.collisionNode.set(selfCollider.node, [...this.collisionNode.get(selfCollider.node), {node: otherCollider.node, points}]);
-        //     return;
-        // }
-        if (this.collisionNode.has(otherCollider.node)) {
-            this.collisionNode.get(otherCollider.node).add(selfCollider.node);
-            this.testRepeatPositionChess(this.collisionNode.get(otherCollider.node));
+        const otherBody = otherCollider.body;
+        const selfChess = selfCollider.node.getComponent(Chess);
+        const otherChess = selfCollider.node.getComponent(Chess);
+        if (!otherBody || !selfChess) return;
+
+        if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
+            selfChess.isStatic = true;
+            this.countCollision += 1;
+            this.testMoveOver();
+            console.log(this.countCollision)
             return;
         }
-        this.collisionNode.set(otherCollider.node, new Set().add(selfCollider.node));
+        if (!otherChess) return;
+        if (!otherChess.isStatic) return 
+        selfChess.isStatic = true;
+        this.countCollision += 1;
+        this.testMoveOver();
+        console.log(this.countCollision)
     }
 
-    testRepeatPositionChess(nodeSet: Set<Node>) {
-        console.log(nodeSet)
-        const arr = Array.from(nodeSet);
+    testRepeatPositionChess() {
+		const parent = find('Canvas/Cell/numberNode');
+        if (!parent || !parent.children.length) return;
+        const arr = parent.children;
         console.log(arr)
         const chess = _.groupBy(arr, (node) => {
             console.log(node.position)
@@ -213,29 +253,13 @@ export default class ChessManager extends Component {
         console.log(mergeChess)
         if (!mergeChess.length) return;
 
-		const parent = find('Canvas/Cell/chessPlaceHolder');
         mergeChess.forEach(chessArr => {
-            chessArr.forEach(node => {
-                // node.getComponent(RigidBody2D).awake = false;
-                console.log()
-                node.getComponent(BoxCollider2D).group = 268435456;
-                this.scheduleOnce(() => {
-                    // node.destroy();
-                })
-            }); 
-            // const holderNode = new Node('holder')
-            // const UI = holderNode.addComponent(UITransform)
-            // const body = holderNode.addComponent(RigidBody2D)
-            // const box = holderNode.addComponent(BoxCollider2D)
-            // UI.width = box.size.width = 216
-            // UI.height = box.size.height = 216
-            // // body.type
-            // console.log(parent)
-            // // const holderNode = instantiate(parent.children[0])
-            // holderNode.setPosition(chessArr[0].position)
-            // console.log(holderNode)
-            // // holderNode.active = true;
-            // holderNode.parent = parent;
+            console.log(chessArr)
+            this.scheduleOnce(() => {
+                this.newChess(`chess-${chessArr[0].name.split('-')[1] * 2}`, chessArr[0].position, {newMerged: true})
+                chessArr[0].destroy();
+                chessArr[1].destroy();
+            })
         });
 
     }

@@ -29,6 +29,7 @@ export default class Chess extends Component {
     speed: Vec3 = new Vec3(0, 0, 0)
     newMerged: boolean = false; // 是否新合成的
     isNew: boolean = false; // 是否新生成的
+    isStatic: boolean = false;
 
 }
 
