@@ -321,8 +321,8 @@ export default class ChessManager extends Component {
     }
     mergeRepeatPositionChess() {
         this.sameCollisionNode.forEach((value, key) => {
-
             const mergeChess = Array.from(value)
+            console.log(`merge: key:${key.uuid}, ${key.name}, value: length: ${mergeChess.length}, ${mergeChess[0]}, ${mergeChess[1]}`)
             if (mergeChess.length < 2) return;
             this.newChess(`chess-${mergeChess[0].name.split('-')[1] * 2}`, mergeChess[0].position, {newMerged: true})
             this.sameCollisionNode.delete(key);
