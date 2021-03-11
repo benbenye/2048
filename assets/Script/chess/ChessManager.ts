@@ -15,7 +15,7 @@ export default class ChessManager extends Component {
     standbyMergeNode: Node[] = [];
 
     sameCollisionNode: Map<Node, Set<Node>> = new Map();
-    countMoveNode: object = {};
+    beforeMoveNodeCount: number = 0;
     countCollision: number = 0;
 
     @property
@@ -160,16 +160,17 @@ export default class ChessManager extends Component {
             }
             
         })
+        this.beforeMoveNodeCount = parent?.children.length || 0;
         this.countCollision = 0;
         this.sameCollisionNode.clear();
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
 
     }
     testMoveOver () {
-        console.log(this.countMoveNode)
         
         const parent = find('Canvas/Cell/numberNode');
-        const isAllStatic = parent?.children.length === this.countCollision
+        const isAllStatic = this.beforeMoveNodeCount === this.countCollision
+        console.log(this.beforeMoveNodeCount, this.countCollision)
         if (!isAllStatic) {
             return;
         }
@@ -236,12 +237,12 @@ export default class ChessManager extends Component {
 	onBeginContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
         console.log(selfCollider.node.name + selfCollider.body?.linearVelocity)
         console.log(otherCollider.node.name + otherCollider.body?.linearVelocity)
-        console.log(this.countMoveNode)
         const otherBody = otherCollider.body;
         const selfBody = selfCollider.body;
         const selfChess = selfCollider.node.getComponent(Chess);
         const otherChess = otherCollider.node.getComponent(Chess);
         if (!otherBody || !selfChess || !selfBody) return;
+        if (selfCollider.group === Math.pow(2, 28) || otherCollider.group === Math.pow(2, 28) || selfChess.isNew) return;
         if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
             selfChess.isStatic = true;
             this.countCollision += 1;
@@ -262,8 +263,8 @@ export default class ChessManager extends Component {
             console.log(this.countCollision)
             return;
         }
-        console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfChess: ${selfChess}, isStatic: ${selfChess?.isStatic}, position: ${selfCollider.node.position}`)
-        console.log(`方向：${this.vectorFlag}, otherName: ${otherCollider.node.name}, otherChess: ${otherChess}, isStatic: ${otherChess?.isStatic}, position: ${otherCollider.node.position}`)
+        console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfChess: ${selfChess}, isStatic: ${selfChess?.isStatic}, isNew: ${selfChess.isNew}, position: ${selfCollider.node.position}`)
+        console.log(`方向：${this.vectorFlag}, otherName: ${otherCollider.node.name}, otherChess: ${otherChess}, isStatic: ${otherChess?.isStatic}, isNew: ${otherChess?.isNew}, position: ${otherCollider.node.position}`)
         if (!otherChess) return;
         if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
             // 有效方向的碰撞
