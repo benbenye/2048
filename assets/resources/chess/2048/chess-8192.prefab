@@ -12,7 +12,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "chess-1024",
+    "_name": "chess-8192",
     "_objFlags": 0,
     "_parent": null,
     "_children": [
@@ -169,8 +169,8 @@
     "_color": {
       "__type__": "cc.Color",
       "r": 237,
-      "g": 197,
-      "b": 63,
+      "g": 194,
+      "b": 46,
       "a": 255
     },
     "_spriteFrame": {
@@ -238,7 +238,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "d5rQr1DaZOsrQrxRVxYwp6"
+    "fileId": "d2jiQrFcNEVYHuYlAIGrQt"
   },
   {
     "__type__": "cc.Node",
@@ -341,7 +341,7 @@
       "b": 242,
       "a": 255
     },
-    "_string": "1024",
+    "_string": "8192",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 60,
@@ -406,7 +406,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "92xQ8a31pEdpQo5PKrlJ4+"
+    "fileId": "6bCnxiQA9MGJqSCEC8UPUx"
   },
   {
     "__type__": "cc.UITransform",
@@ -515,7 +515,7 @@
       "__id__": 25
     },
     "tag": 0,
-    "_group": 1024,
+    "_group": 8192,
     "_density": 1,
     "_sensor": true,
     "_friction": 0,
@@ -577,6 +577,6 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "f7IEMQvYRKQ7mYHRJM1OmF"
+    "fileId": "adMO+F2TFFYpbWXJz/9iXL"
   }
 ]
