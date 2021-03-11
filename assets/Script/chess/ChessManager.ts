@@ -14,7 +14,7 @@ const dimensionY = runtimeData.dimensionY;
 export default class ChessManager extends Component {
     standbyMergeNode: Node[] = [];
 
-    sameCollisionNode: WeakMap<Node, Set<Node>> = new WeakMap();
+    sameCollisionNode: Map<Node, Set<Node>> = new Map();
     countMoveNode: object = {};
     countCollision: number = 0;
 
@@ -161,12 +161,12 @@ export default class ChessManager extends Component {
             
         })
         this.countCollision = 0;
-        this.sameCollisionNode = new WeakMap();
+        this.sameCollisionNode.clear();
         PhysicsSystem2D.instance.gravity = new Vec2(vector.x* runtimeData.gravity, vector.y* runtimeData.gravity);
 
     }
     testMoveOver () {
-        console.log(this.countMoveNode, this.collisionNode)
+        console.log(this.countMoveNode)
         
         const parent = find('Canvas/Cell/numberNode');
         const isAllStatic = parent?.children.length === this.countCollision
@@ -175,13 +175,14 @@ export default class ChessManager extends Component {
         }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
-            parent?.children.forEach(node => {
-                this.scheduleOnce(() => {
-                    node.getComponent(RigidBody2D).linearDamping = 9999
+            this.scheduleOnce(() => {
+                parent?.children.forEach(node => {
+                    // 防止node destroy,先判断是否存在
+                    console.log(node)
+                    node && (node.getComponent(RigidBody2D).linearDamping = 9999)
                 })
             })
             // this.testRepeatPositionChess();
-            this.collisionNode = new WeakMap();
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
             runtimeData.gameState = Constants.GameState.NEW_CHESS;
             this.newChess('chess-2');
@@ -235,7 +236,7 @@ export default class ChessManager extends Component {
 	onBeginContact (selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, contact) {
         console.log(selfCollider.node.name + selfCollider.body?.linearVelocity)
         console.log(otherCollider.node.name + otherCollider.body?.linearVelocity)
-        console.log(this.countMoveNode, this.collisionNode)
+        console.log(this.countMoveNode)
         const otherBody = otherCollider.body;
         const selfBody = selfCollider.body;
         const selfChess = selfCollider.node.getComponent(Chess);
@@ -247,15 +248,17 @@ export default class ChessManager extends Component {
             //---
             if (this.sameCollisionNode.has(otherCollider.node)) {
                 this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
-                this.testRepeatPositionChess(otherCollider.node);
+                this.testRepeatPositionChess(otherCollider.node, () => {
+                    this.testMoveOver();
+                });
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
+                this.testMoveOver();
             }
             // 改变box的分组，也许可以
             //--
-            this.testMoveOver();
             console.log(this.countCollision)
             return;
         }
@@ -273,49 +276,39 @@ export default class ChessManager extends Component {
             //---
             if (this.sameCollisionNode.has(otherCollider.node)) {
                 this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
-                this.testRepeatPositionChess(otherCollider.node);
+                this.testRepeatPositionChess(otherCollider.node, () => {
+                    this.testMoveOver();
+                });
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
+                this.testMoveOver();
             }
             // 改变box的分组，也许可以
             //--
             console.log(this.countCollision)
-            this.testMoveOver();
         }
     }
 
-    testRepeatPositionChess(key: Node) {
-		const parent = find('Canvas/Cell/numberNode');
-        if (!parent || !parent.children.length) return;
-        const arr = parent.children;
-        // const chess = _.groupBy(arr, (node) => {
-        //     console.log(node.position)
-        //     const x = Math.floor((node.position.x  ) / runtimeData.chessWidth);
-        //     const y = Math.floor((node.position.y  ) / runtimeData.chessWidth);
-        //     console.log(x, y)
-        //     return `x${x}y${y}`;
-        // });
-        // const mergeChess = Object.values(chess).filter(e => e.length > 1)
+    testRepeatPositionChess(key: Node, completeCallback: Function) {
         const same = this.sameCollisionNode.get(key);
         console.log(this.sameCollisionNode.get(key))
-        // const mergeChess = [...same]
         const mergeChess = Array.from(same)
         if (mergeChess.length < 2) return;
 
-        // mergeChess.forEach(chessArr => {
-        //     console.log(chessArr)
-            this.scheduleOnce(() => {
-                mergeChess[0].getComponent(BoxCollider2D).group = 0;
-                mergeChess[1].getComponent(BoxCollider2D).group = 0;
-                this.newChess(`chess-${mergeChess[0].name.split('-')[1] * 2}`, mergeChess[0].position, {newMerged: true})
-                mergeChess[0].destroy();
-                mergeChess[1].destroy();
-                this.sameCollisionNode.delete(key);
-            })
-        // });
-
+        this.scheduleOnce(() => {
+            mergeChess[0].getComponent(BoxCollider2D).group = 0;
+            mergeChess[1].getComponent(BoxCollider2D).group = 0;
+            this.newChess(`chess-${mergeChess[0].name.split('-')[1] * 2}`, mergeChess[0].position, {newMerged: true})
+            // 先删除引用，在删除节点，防止invalid buffer pool handle告警，这样修改好像没有起作用
+            this.sameCollisionNode.delete(key);
+            mergeChess[0].destroy();
+            mergeChess[1].destroy();
+            if (typeof completeCallback === 'function') {
+                completeCallback();
+            }
+        })
     }
 
 	newChess(name: string, coo?: any, options?: object) {
