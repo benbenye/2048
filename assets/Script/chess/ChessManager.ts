@@ -197,13 +197,15 @@ export default class ChessManager extends Component {
                     console.log(x, y)
                     const absX = Math.abs(Math.round(x) - x)
                     const absY = Math.abs(Math.round(y) - y)
-                    console.log(absX, absY)
-                    // if (absX > 0.35 || absY > 0.35) {
-                    //     this.scheduleOnce((body: RigidBody2D) => {
-                    //         body.linearDamping = 9999;
-                    //     });
-                    //     return;
-                    // }
+                    console.log(absX, absY, `id: ${node.uuid}`)
+                    if (absX > 0.05 || absY > 0.05) {
+                        const body1 = body;
+                        this.scheduleOnce(() => {
+                            console.log(`scheduleOnceid: ${body1.node.uuid}`)
+                            body1.linearDamping = 9999;
+                        });
+                        return;
+                    }
                     body.linearDamping = 9999;
                 }
             }
@@ -232,8 +234,6 @@ export default class ChessManager extends Component {
 		    box.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
-                // if (runtimeData.isAutoMerge) {
-                //     box.group = +node.name.split('-')[1];
                 const absX = Math.abs((position.x - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
                 const absY = Math.abs((position.y - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
                 const x = Math.round(absX)
@@ -247,8 +247,6 @@ export default class ChessManager extends Component {
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).call(() => {
                     runtimeData.gameState = Constants.GameState.IDLE;
-                    // box.size.width = box.size.height = 216.5;
-                    // box.apply();
                 }).start()
             }
 			if (options && options.isNew){
@@ -272,45 +270,44 @@ export default class ChessManager extends Component {
         if (selfCollider.group === Math.pow(2, 28) || otherCollider.group === Math.pow(2, 28) || selfChess.isNew) return;
         if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
             selfChess.isStatic = true;
-            this.countCollision += 1;
-            //---
-            if (this.sameCollisionNode.has(otherCollider.node)) {
-                this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
+
+            const collisionSet = this.sameCollisionNode.get(otherCollider.node);
+            if (collisionSet) {
+                if (collisionSet.has(selfCollider.node)) return; // 重复碰撞
+                this.sameCollisionNode.set(otherCollider.node, collisionSet.add(selfCollider.node))
                 this.standbyMergeRepeatPositionChess(otherCollider.node);
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
             }
+            this.countCollision += 1;
             this.testMoveOver();
-            // 改变box的分组，也许可以
-            //--
             console.log(this.countCollision)
             return;
         }
-        console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfChess: ${selfChess}, isStatic: ${selfChess?.isStatic}, isNew: ${selfChess.isNew}, position: ${selfCollider.node.position}`)
-        console.log(`方向：${this.vectorFlag}, otherName: ${otherCollider.node.name}, otherChess: ${otherChess}, isStatic: ${otherChess?.isStatic}, isNew: ${otherChess?.isNew}, position: ${otherCollider.node.position}`)
+        console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfID: ${selfCollider.node.uuid}, isStatic: ${selfChess?.isStatic}, isNew: ${selfChess.isNew}, position: ${selfCollider.node.position}`)
+        console.log(`方向：${this.vectorFlag}, otherName: ${otherCollider.node.name}, otherID: ${otherCollider.node.uuid}, isStatic: ${otherChess?.isStatic}, isNew: ${otherChess?.isNew}, position: ${otherCollider.node.position}`)
         if (!otherChess) return;
+
+        if (selfChess.isStatic && otherChess.isStatic) return; // 防止已经因为停止的元素发生碰撞不能准确的过滤掉，先以isStatic过滤
+
         if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
             // 有效方向的碰撞
-            otherChess.isStatic = true;
-            // otherBody.linearDamping = 9999
-            this.scheduleOnce(() => {
-                // otherBody.type = ERigidBody2DType.Static;
-            })
-            this.countCollision += 1;
-            //---
-            if (this.sameCollisionNode.has(otherCollider.node)) {
-                this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
+            selfChess.isStatic = true;
+
+            const collisionSet = this.sameCollisionNode.get(otherCollider.node);
+            if (collisionSet) {
+                if (collisionSet.has(selfCollider.node)) return; // 重复碰撞
+                this.sameCollisionNode.set(otherCollider.node, collisionSet.add(selfCollider.node))
                 this.standbyMergeRepeatPositionChess(otherCollider.node);
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
             }
-            // 改变box的分组，也许可以
-            //--
-                this.testMoveOver();
+            this.countCollision += 1;
+            this.testMoveOver();
             console.log(this.countCollision)
         }
     }
