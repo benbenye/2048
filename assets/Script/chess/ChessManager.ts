@@ -168,7 +168,6 @@ export default class ChessManager extends Component {
     }
     testMoveOver () {
         
-        const parent = find('Canvas/Cell/numberNode');
         const isAllStatic = this.beforeMoveNodeCount === this.countCollision
         console.log(this.beforeMoveNodeCount, this.countCollision)
         if (!isAllStatic) {
@@ -176,18 +175,41 @@ export default class ChessManager extends Component {
         }
             runtimeData.gameState = Constants.GameState.MOVE_OVER;
             console.log('move over')
-            this.scheduleOnce(() => {
-                parent?.children.forEach(node => {
-                    // 防止node destroy,先判断是否存在
-                    console.log(node)
-                    node && (node.getComponent(RigidBody2D).linearDamping = 9999)
-                })
-            })
-            // this.testRepeatPositionChess();
+        this.scheduleOnce(() => {
+            this.mergeRepeatPositionChess();
+            this.stopChess();
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
             runtimeData.gameState = Constants.GameState.NEW_CHESS;
             this.newChess('chess-2');
+        })
     }
+
+    stopChess() {
+        const parent = find('Canvas/Cell/numberNode');
+        parent?.children.forEach(node => {
+            // 防止node destroy,先判断是否存在
+            console.log(node)
+            if (node) {
+                const body = node.getComponent(RigidBody2D);
+                if(body) {
+                    const x = (node.position.x - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth
+                    const y = (node.position.y - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth
+                    console.log(x, y)
+                    const absX = Math.abs(Math.round(x) - x)
+                    const absY = Math.abs(Math.round(y) - y)
+                    console.log(absX, absY)
+                    // if (absX > 0.35 || absY > 0.35) {
+                    //     this.scheduleOnce((body: RigidBody2D) => {
+                    //         body.linearDamping = 9999;
+                    //     });
+                    //     return;
+                    // }
+                    body.linearDamping = 9999;
+                }
+            }
+        })
+    }
+
     getVector (direction: number) {
         const map = [
             { x: 0,  y: 1 }, // Up
@@ -210,18 +232,23 @@ export default class ChessManager extends Component {
 		    box.on(Contact2DType.BEGIN_CONTACT, this.onBeginContact, this);
 			if (options && options.newMerged) {
 				chessCom.newMerged = options.newMerged;
-                if (runtimeData.isAutoMerge) {
-                    box.group = +node.name.split('-')[1];
-                } else {
-                    box.group = 268435456;
-                }
-                box.size.width = box.size.height = 184;
+                // if (runtimeData.isAutoMerge) {
+                //     box.group = +node.name.split('-')[1];
+                const absX = Math.abs((position.x - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+                const absY = Math.abs((position.y - 0.5 * runtimeData.chessWidth) / runtimeData.chessWidth)
+                const x = Math.round(absX)
+                const y = Math.round(absY)
+                console.log(Math.round(absX), Math.round(absY));
+                const newPosition = this.computeChessPosition(new Vec3(x, y, 0))
+		        node.setPosition(newPosition)
+                box.group = 0;
+                box.size.width = box.size.height = 1;
                 box.apply();
 		        node.setScale(new Vec3(1, 1, 1))
 		        tween(node).to(0.1, {scale: new Vec3(1.2, 1.2, 1)}, { easing: 'linear'} ).to(0.1, {scale: new Vec3(1, 1, 1)}, { easing: 'linear'} ).call(() => {
                     runtimeData.gameState = Constants.GameState.IDLE;
-                    box.size.width = box.size.height = 216.5;
-                    box.apply();
+                    // box.size.width = box.size.height = 216.5;
+                    // box.apply();
                 }).start()
             }
 			if (options && options.isNew){
@@ -249,15 +276,13 @@ export default class ChessManager extends Component {
             //---
             if (this.sameCollisionNode.has(otherCollider.node)) {
                 this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
-                this.testRepeatPositionChess(otherCollider.node, () => {
-                    this.testMoveOver();
-                });
+                this.standbyMergeRepeatPositionChess(otherCollider.node);
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
-                this.testMoveOver();
             }
+            this.testMoveOver();
             // 改变box的分组，也许可以
             //--
             console.log(this.countCollision)
@@ -277,39 +302,36 @@ export default class ChessManager extends Component {
             //---
             if (this.sameCollisionNode.has(otherCollider.node)) {
                 this.sameCollisionNode.set(otherCollider.node, this.sameCollisionNode.get(otherCollider.node).add(selfCollider.node))
-                this.testRepeatPositionChess(otherCollider.node, () => {
-                    this.testMoveOver();
-                });
+                this.standbyMergeRepeatPositionChess(otherCollider.node);
             } else {
                 const w = new Set();
                 w.add(selfCollider.node)
                 this.sameCollisionNode.set(otherCollider.node, w);
-                this.testMoveOver();
             }
             // 改变box的分组，也许可以
             //--
+                this.testMoveOver();
             console.log(this.countCollision)
         }
     }
-
-    testRepeatPositionChess(key: Node, completeCallback: Function) {
+    standbyMergeRepeatPositionChess (key: Node) {
         const same = this.sameCollisionNode.get(key);
         console.log(this.sameCollisionNode.get(key))
         const mergeChess = Array.from(same)
         if (mergeChess.length < 2) return;
+        mergeChess[0].getComponent(BoxCollider2D).group = 1 << 29;
+        mergeChess[1].getComponent(BoxCollider2D).group = 1 << 29;
+    }
+    mergeRepeatPositionChess() {
+        this.sameCollisionNode.forEach((value, key) => {
 
-        this.scheduleOnce(() => {
-            mergeChess[0].getComponent(BoxCollider2D).group = 0;
-            mergeChess[1].getComponent(BoxCollider2D).group = 0;
+            const mergeChess = Array.from(value)
+            if (mergeChess.length < 2) return;
             this.newChess(`chess-${mergeChess[0].name.split('-')[1] * 2}`, mergeChess[0].position, {newMerged: true})
-            // 先删除引用，在删除节点，防止invalid buffer pool handle告警，这样修改好像没有起作用
             this.sameCollisionNode.delete(key);
             mergeChess[0].destroy();
             mergeChess[1].destroy();
-            if (typeof completeCallback === 'function') {
-                completeCallback();
-            }
-        })
+        });
     }
 
 	newChess(name: string, coo?: any, options?: object) {
@@ -320,6 +342,7 @@ export default class ChessManager extends Component {
 		}
 		if (!coo) {
 			coo = this.computeChessPosition(this.getRandomChessPosition());
+            console.log(`随机坐标：${coo}`)
             options = {isNew: true}
 		}
 		return this.getChessNode(name).then(node => {
