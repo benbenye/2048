@@ -177,7 +177,9 @@ export default class ChessManager extends Component {
             console.log('move over')
         this.scheduleOnce(() => {
             this.mergeRepeatPositionChess();
-            this.stopChess();
+            this.scheduleOnce(() => {
+                this.stopChess();
+            })
             PhysicsSystem2D.instance.gravity = new Vec2(0, 0);
             runtimeData.gameState = Constants.GameState.NEW_CHESS;
             this.newChess('chess-2');
@@ -269,21 +271,7 @@ export default class ChessManager extends Component {
         if (!otherBody || !selfChess || !selfBody) return;
         if (selfCollider.group === Math.pow(2, 28) || otherCollider.group === Math.pow(2, 28) || selfChess.isNew) return;
         if (otherBody.type === ERigidBody2DType.Static && otherBody.node.name.split('_')[2] === this.vectorFlag) {
-            selfChess.isStatic = true;
-
-            const collisionSet = this.sameCollisionNode.get(otherCollider.node);
-            if (collisionSet) {
-                if (collisionSet.has(selfCollider.node)) return; // 重复碰撞
-                this.sameCollisionNode.set(otherCollider.node, collisionSet.add(selfCollider.node))
-                this.standbyMergeRepeatPositionChess(otherCollider.node);
-            } else {
-                const w = new Set();
-                w.add(selfCollider.node)
-                this.sameCollisionNode.set(otherCollider.node, w);
-            }
-            this.countCollision += 1;
-            this.testMoveOver();
-            console.log(this.countCollision)
+            this.handleCollider(selfCollider, otherCollider, selfChess);
             return;
         }
         console.log(`方向：${this.vectorFlag}, selfName: ${selfCollider.node.name}, selfID: ${selfCollider.node.uuid}, isStatic: ${selfChess?.isStatic}, isNew: ${selfChess.isNew}, position: ${selfCollider.node.position}`)
@@ -292,34 +280,37 @@ export default class ChessManager extends Component {
 
         if (selfChess.isStatic && otherChess.isStatic) return; // 防止已经因为停止的元素发生碰撞不能准确的过滤掉，先以isStatic过滤
 
-        if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
+        if ((selfCollider.node.position.x - otherCollider.node.position.x) * PhysicsSystem2D.instance.gravity.x < 0 || 
+            (selfCollider.node.position.y - otherCollider.node.position.y) * PhysicsSystem2D.instance.gravity.y < 0) {
             // 有效方向的碰撞
-            selfChess.isStatic = true;
-
-            const collisionSet = this.sameCollisionNode.get(otherCollider.node);
-            if (collisionSet) {
-                if (collisionSet.has(selfCollider.node)) return; // 重复碰撞
-                this.sameCollisionNode.set(otherCollider.node, collisionSet.add(selfCollider.node))
-                this.standbyMergeRepeatPositionChess(otherCollider.node);
-            } else {
-                const w = new Set();
-                w.add(selfCollider.node)
-                this.sameCollisionNode.set(otherCollider.node, w);
-            }
-            this.countCollision += 1;
-            this.testMoveOver();
-            console.log(this.countCollision)
+            this.handleCollider(selfCollider, otherCollider, selfChess);
         }
+    }
+    handleCollider(selfCollider: BoxCollider2D, otherCollider: BoxCollider2D, selfChess: Chess) {
+        selfChess.isStatic = true;
+
+        const collisionSet = this.sameCollisionNode.get(otherCollider.node);
+        if (collisionSet) {
+            if (collisionSet.has(selfCollider.node)) return; // 重复碰撞
+            this.sameCollisionNode.set(otherCollider.node, collisionSet.add(selfCollider.node))
+            this.standbyMergeRepeatPositionChess(otherCollider.node);
+        } else {
+            const w = new Set();
+            w.add(selfCollider.node)
+            this.sameCollisionNode.set(otherCollider.node, w);
+        }
+        this.countCollision += 1;
+        this.testMoveOver();
     }
     standbyMergeRepeatPositionChess (key: Node) {
         const same = this.sameCollisionNode.get(key);
-        console.log(this.sameCollisionNode.get(key))
         const mergeChess = Array.from(same)
         if (mergeChess.length < 2) return;
         mergeChess[0].getComponent(BoxCollider2D).group = 1 << 29;
         mergeChess[1].getComponent(BoxCollider2D).group = 1 << 29;
     }
     mergeRepeatPositionChess() {
+        this.mergeRepeatKeyNode();
         this.sameCollisionNode.forEach((value, key) => {
             const mergeChess = Array.from(value)
             console.log(`merge: key:${key.uuid}, ${key.name}, value: length: ${mergeChess.length}, ${mergeChess[0]}, ${mergeChess[1]}`)
@@ -329,6 +320,22 @@ export default class ChessManager extends Component {
             mergeChess[0].destroy();
             mergeChess[1].destroy();
         });
+    }
+
+    mergeRepeatKeyNode () {
+        this.sameCollisionNode.forEach((value, key) => {
+            const mergeChess = Array.from(value);
+            if (mergeChess.length > 1) {
+                const sameChessSet1 = this.sameCollisionNode.get(mergeChess[0])
+                const sameChessSet2 = this.sameCollisionNode.get(mergeChess[1])
+                if (sameChessSet1 && sameChessSet2 ) {
+                    if (Array.from(sameChessSet1)[0].name === Array.from(sameChessSet2)[0].name) {
+                        this.sameCollisionNode.set(mergeChess[0], sameChessSet1.add(Array.from(sameChessSet2)[0]))
+                        this.sameCollisionNode.delete(mergeChess[1]);
+                    }
+                }
+            }
+        })
     }
 
 	newChess(name: string, coo?: any, options?: object) {
