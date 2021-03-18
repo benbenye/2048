@@ -16,9 +16,18 @@ enum EventName {
     COLLISION = 'collision'
 }
 
+enum DaxiguaGameState {
+    IDLE = 'idle',
+    DROPPING = 'dropping',
+    MERGING = 'merging',
+    PAUSE = 'pause',
+    GAME_OVER = 'game_over'
+}
+
 
 @ccclass
 export default class Constants extends Component {
     public static GameState = GameState;
     public static EventName = EventName;
+    public static DaxiguaGameState = DaxiguaGameState;
 }
