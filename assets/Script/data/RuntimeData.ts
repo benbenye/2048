@@ -23,4 +23,5 @@ export default class RunTimeData {
     public collisionCount = 0;
     public gameState = Constants.GameState.IDLE;
     public isAutoMerge = false;
+    public score = 0;
 }

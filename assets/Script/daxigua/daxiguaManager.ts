@@ -1,19 +1,19 @@
 
-import { _decorator, Component, Node, find, SystemEvent, ITriggerEvent, EventMouse, Sprite, resources, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera, View, tween } from 'cc';
+import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label } from 'cc';
 const { ccclass, property } = _decorator;
 import Fruit from './Fruit';
 import LoadPrefabReturnNode from '../util/loadPrefabReturnNode';
 import Constants from '../data/Constants';
-import { RigidBody } from 'cc';
+import RunTimeData from '../data/RuntimeData';
 
 @ccclass('DaxiguaManager')
 export class DaxiguaManager extends Component {
     gameState = Constants.DaxiguaGameState.IDLE;
     oneFruitNode: Node | null = null;
     oneFruitNodePosition: Vec2 = new Vec2(0, 0)
+    scoreLabel: Label | null = null;
+    count: number = 0;
 
-    // @property
-    // serializableDummy = 0;
     onLoad() {
         const root = find('Canvas');
 
@@ -28,6 +28,9 @@ export class DaxiguaManager extends Component {
     start () {
         if (this.gameState === Constants.DaxiguaGameState.IDLE) {
             this.createFruit(1);
+            this.count ++;
+            RunTimeData.instance().score = 0;
+            this.scoreLabel = find('Canvas/Score')?.getComponent(Label);
         }
     }
 
@@ -39,7 +42,6 @@ export class DaxiguaManager extends Component {
     }
 
     finalClick(e: EventMouse) {
-        console.log('up')
         if (!this.oneFruitNode || this.gameState === Constants.DaxiguaGameState.DROPPING) return;
         this.gameState = Constants.DaxiguaGameState.DROPPING;
         const bodyCom = this.oneFruitNode.getComponent(RigidBody2D)
@@ -52,34 +54,53 @@ export class DaxiguaManager extends Component {
         }).call(() => {
             bodyCom.type = ERigidBody2DType.Dynamic;
             this.scheduleOnce(() => {
-                this.createFruit(1);
+                if (this.count < 6) {
+                    this.createFruit(this.count);
+                } else {
+                    this.createFruit(Math.floor(Math.random() * 6) + 1);
+                }
+                this.count++;
                 this.gameState = Constants.DaxiguaGameState.IDLE;
-            }, 0.2)
+            }, 0.4)
         }).start();
     }
     beginContact(selfCollider: CircleCollider2D, otherCollider: CircleCollider2D, contact) {
-        const selfFruit = selfCollider.node;
-        const otherFruit = otherCollider.node;
+        let selfFruit = selfCollider.node;
+        let otherFruit = otherCollider.node;
         if (selfFruit.name === otherFruit.name) {
             const selfFruitCom = selfFruit.getComponent(Fruit)
             const otherFruitCom = otherFruit.getComponent(Fruit)
             if (!selfFruitCom || !otherFruitCom) return
-            if (selfFruitCom.isMerging && otherFruitCom.isMerging) return;
+            if (selfFruitCom.isMerging || otherFruitCom.isMerging) return;
             selfFruitCom.isMerging = otherFruitCom.isMerging = true;
             contact.enabled = true;
             this.scheduleOnce(() => {
                 const bodyCom = selfFruit.getComponent(RigidBody2D)
-                if (!bodyCom) return;
+                const otherBodyCom = otherFruit.getComponent(RigidBody2D)
+                if (!bodyCom || !otherBodyCom) return;
+                otherBodyCom.enabledContactListener = false;
                 bodyCom.enabledContactListener = false;
-                tween(selfFruit).to(0.1, {
-                    position: otherFruit.position
-                }).call(() => {
+                bodyCom.type = ERigidBody2DType.Static;
+                otherBodyCom.type = ERigidBody2DType.Static;
+                let _tween = null;
+                if (selfFruit.position.y > otherFruit.position.y) {
+                    _tween = tween(selfFruit).to(0.15, {
+                        position: otherFruit.position
+                    }, { easing: 'quadIn'})
+                } else {
+                    _tween = tween(otherFruit).to(0.15, {
+                        position: selfFruit.position
+                    }, { easing: 'quadIn'})
+                }
+                _tween.call(() => {
                     selfFruit.getComponent(CircleCollider2D).group = 0;
                     otherFruit.getComponent(CircleCollider2D).group = 0;
                     console.log(otherFruit.getWorldPosition())
                     this.createFruit(+selfFruit.name + 1, otherFruit.getPosition());
                     otherFruit.destroy();
                     selfFruit.destroy();
+                    RunTimeData.instance().score += +selfFruit.name*2;
+                    this.scoreLabel.string = `${RunTimeData.instance().score}`;
                 }).start();
             })
         }
