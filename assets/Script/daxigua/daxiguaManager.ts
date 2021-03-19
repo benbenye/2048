@@ -27,7 +27,7 @@ export class DaxiguaManager extends Component {
 
     start () {
         if (this.gameState === Constants.DaxiguaGameState.IDLE) {
-            this.createFruit(1);
+            this.createFruit(1).then(node => this.oneFruitNode = node);
             this.count ++;
             RunTimeData.instance().score = 0;
             this.scoreLabel = find('Canvas/Score')?.getComponent(Label);
@@ -43,25 +43,31 @@ export class DaxiguaManager extends Component {
 
     finalClick(e: EventMouse) {
         if (!this.oneFruitNode || this.gameState === Constants.DaxiguaGameState.DROPPING) return;
-        this.gameState = Constants.DaxiguaGameState.DROPPING;
         const bodyCom = this.oneFruitNode.getComponent(RigidBody2D)
         const camera = find('Canvas/Camera')?.getComponent(Camera)
         if (!bodyCom) return;
+        this.gameState = Constants.DaxiguaGameState.DROPPING;
         this.oneFruitNodePosition =  e.getLocation();
         const aa = camera?.screenToWorld(new Vec3(this.oneFruitNodePosition.x, this.oneFruitNodePosition.y, 0))
         tween(this.oneFruitNode).to(0.2, {
             worldPosition: new Vec3(aa?.x, this.oneFruitNode.getWorldPosition().y, 0)
         }).call(() => {
             bodyCom.type = ERigidBody2DType.Dynamic;
+            this.oneFruitNode = null;
             this.scheduleOnce(() => {
-                if (this.count < 6) {
-                    this.createFruit(this.count);
+                if (this.count < 3) {
+                    this.createFruit(this.count).then(node => {
+                        this.oneFruitNode = node
+                        this.gameState = Constants.DaxiguaGameState.IDLE;
+                    });
                 } else {
-                    this.createFruit(Math.floor(Math.random() * 6) + 1);
+                    this.createFruit(Math.floor(Math.random() * 3) + 1).then(node => {
+                        this.oneFruitNode = node
+                        this.gameState = Constants.DaxiguaGameState.IDLE;
+                    });
                 }
                 this.count++;
-                this.gameState = Constants.DaxiguaGameState.IDLE;
-            }, 0.4)
+            }, 0.5)
         }).start();
     }
     beginContact(selfCollider: CircleCollider2D, otherCollider: CircleCollider2D, contact) {
@@ -93,14 +99,13 @@ export class DaxiguaManager extends Component {
                     }, { easing: 'quadIn'})
                 }
                 _tween.call(() => {
-                    selfFruit.getComponent(CircleCollider2D).group = 0;
-                    otherFruit.getComponent(CircleCollider2D).group = 0;
-                    console.log(otherFruit.getWorldPosition())
                     this.createFruit(+selfFruit.name + 1, otherFruit.getPosition());
+                    otherFruit.active = false;
+                    selfFruit.active = false;
                     otherFruit.destroy();
                     selfFruit.destroy();
                     RunTimeData.instance().score += +selfFruit.name*2;
-                    this.scoreLabel.string = `${RunTimeData.instance().score}`;
+                    this.scoreLabel.string = `score: ${RunTimeData.instance().score}`;
                 }).start();
             })
         }
@@ -111,13 +116,24 @@ export class DaxiguaManager extends Component {
             console.log(position)
             node.setPosition(position)
             node.parent = fruitNode;
+            node.setScale(new Vec3(0, 0, 0));
             const bodyCom = node.getComponent(RigidBody2D)
             const colliderCom = node.getComponent(CircleCollider2D)
             if (!bodyCom) return;
             if (!colliderCom) return;
-            colliderCom.on(Contact2DType.BEGIN_CONTACT, this.beginContact, this);
-            bodyCom.type = ERigidBody2DType.Dynamic;
-            // bodyCom.enabledContactListener = false;
+
+            bodyCom.type = ERigidBody2DType.Kinematic;
+            bodyCom.linearVelocity = new Vec2(0, 5)
+            bodyCom.linearDamping = 6;
+            colliderCom.friction = 16;
+            colliderCom.apply();
+            tween(node).to(.3, {
+                scale: new Vec3(2, 2, 2)
+            }, {easing: 'backOut'}).call(() => {
+                colliderCom.on(Contact2DType.BEGIN_CONTACT, this.beginContact, this);
+                bodyCom.type = ERigidBody2DType.Dynamic;
+            }).start();
+
         } else {
             const UI = fruitNode?.getComponent(UITransform)
             if (!UI) {
@@ -125,11 +141,19 @@ export class DaxiguaManager extends Component {
             }
             const y = UI.contentSize.height / 2 - 200
             node.setPosition(new Vec3(0, y, 0))
+            node.setScale(new Vec3(0, 0, 0));
             node.parent = fruitNode;
-            this.oneFruitNode = node;
-            const colliderCom = this.oneFruitNode.getComponent(CircleCollider2D)
-            if (!colliderCom) return;
-            colliderCom.on(Contact2DType.BEGIN_CONTACT, this.beginContact, this);
+            const colliderCom = node.getComponent(CircleCollider2D)
+            const bodyCom = node.getComponent(RigidBody2D)
+            if (!colliderCom || !bodyCom) return;
+            bodyCom.linearDamping = 6;
+            colliderCom.friction = 16;
+            colliderCom.apply();
+            tween(node).to(.3, {
+                scale: new Vec3(2, 2, 2)
+            }, {easing: 'backOut'}).call(() => {
+                colliderCom.on(Contact2DType.BEGIN_CONTACT, this.beginContact, this);
+            }).start();
         }
         return node;
     }
