@@ -1,6 +1,7 @@
 
-import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label } from 'cc';
+import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label, Sprite } from 'cc';
 const { ccclass, property } = _decorator;
+import _ from '../lodash';
 import Fruit from './Fruit';
 import LoadPrefabReturnNode from '../util/loadPrefabReturnNode';
 import Constants from '../data/Constants';
@@ -9,10 +10,12 @@ import RunTimeData from '../data/RuntimeData';
 @ccclass('DaxiguaManager')
 export class DaxiguaManager extends Component {
     gameState = Constants.DaxiguaGameState.IDLE;
-    oneFruitNode: Node | null = null;
+    oneFruitNode: Node = new Node();
     oneFruitNodePosition: Vec2 = new Vec2(0, 0)
-    scoreLabel: Label | null = null;
+    scoreLabel: Label = new Label();
     count: number = 0;
+    warningLine: Node = new Node();
+    warningPosition: number = 0;
 
     onLoad() {
         const root = find('Canvas');
@@ -31,11 +34,13 @@ export class DaxiguaManager extends Component {
             this.count ++;
             RunTimeData.instance().score = 0;
             this.scoreLabel = find('Canvas/Score')?.getComponent(Label);
+            this.warningLine = find('Canvas/WarningLine');
+            this.warningPosition = this.warningLine.position.y - this.warningLine.height / 2
         }
     }
 
-    // update (deltaTime: number) {
-    // }
+    update (deltaTime: number) {
+    }
 
     flagClick() {
         console.log('down')
@@ -44,8 +49,9 @@ export class DaxiguaManager extends Component {
     finalClick(e: EventMouse) {
         if (!this.oneFruitNode || this.gameState === Constants.DaxiguaGameState.DROPPING) return;
         const bodyCom = this.oneFruitNode.getComponent(RigidBody2D)
+        const fruitCom = this.oneFruitNode.getComponent(Fruit)
         const camera = find('Canvas/Camera')?.getComponent(Camera)
-        if (!bodyCom) return;
+        if (!bodyCom || !fruitCom) return;
         this.gameState = Constants.DaxiguaGameState.DROPPING;
         this.oneFruitNodePosition =  e.getLocation();
         const aa = camera?.screenToWorld(new Vec3(this.oneFruitNodePosition.x, this.oneFruitNodePosition.y, 0))
@@ -55,6 +61,7 @@ export class DaxiguaManager extends Component {
             bodyCom.type = ERigidBody2DType.Dynamic;
             this.oneFruitNode = null;
             this.scheduleOnce(() => {
+                fruitCom.isStandby = false;
                 if (this.count < 3) {
                     this.createFruit(this.count).then(node => {
                         this.oneFruitNode = node
@@ -73,6 +80,7 @@ export class DaxiguaManager extends Component {
     beginContact(selfCollider: CircleCollider2D, otherCollider: CircleCollider2D, contact) {
         let selfFruit = selfCollider.node;
         let otherFruit = otherCollider.node;
+        this.findHighestFruit()
         if (selfFruit.name === otherFruit.name) {
             const selfFruitCom = selfFruit.getComponent(Fruit)
             const otherFruitCom = otherFruit.getComponent(Fruit)
@@ -106,6 +114,7 @@ export class DaxiguaManager extends Component {
                     selfFruit.destroy();
                     RunTimeData.instance().score += +selfFruit.name*2;
                     this.scoreLabel.string = `score: ${RunTimeData.instance().score}`;
+                    this.findHighestFruit()
                 }).start();
             })
         }
@@ -145,7 +154,9 @@ export class DaxiguaManager extends Component {
             node.parent = fruitNode;
             const colliderCom = node.getComponent(CircleCollider2D)
             const bodyCom = node.getComponent(RigidBody2D)
-            if (!colliderCom || !bodyCom) return;
+            const fruitCom = node.getComponent(Fruit)
+            if (!colliderCom || !bodyCom || !fruitCom) return;
+            fruitCom.isStandby = true;
             bodyCom.linearDamping = 6;
             colliderCom.friction = 16;
             colliderCom.apply();
@@ -162,5 +173,27 @@ export class DaxiguaManager extends Component {
         return LoadPrefabReturnNode.getNode(`daxigua/${n}`).then( node => {
             return this.setNode(node, position);
         })
+    }
+
+    findHighestFruit() {
+        const allFruit = find('Canvas/fruitNode').children;
+        const withoutStandby = allFruit.filter(node => {
+            return !node.getComponent(Fruit).isStandby
+        })
+        const sorted = _.sortBy(withoutStandby, (o) => {
+            o.position.y
+        })
+        if (!sorted.length) return;
+        const highestPosition = _.last(sorted).position.y - _.last(sorted).height / 2
+        if (this.warningPosition - highestPosition < 100) {
+            const interval = 0.1
+            const repeat = 10;
+            const delay = 0;
+            let count = 0;
+            this.schedule(() => {
+                this.warningLine.getComponent(Sprite).color.a = count % 2 ? 100 : 255;
+                count++
+            }, interval, repeat, delay);
+        }
     }
 }

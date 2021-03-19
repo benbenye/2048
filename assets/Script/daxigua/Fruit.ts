@@ -10,6 +10,8 @@ export default class Fruit extends Component {
 
     isMerging = false;
 
+    isStandby = false;
+
     start () {
     }
 
