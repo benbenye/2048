@@ -25,6 +25,14 @@ export class UIManager extends Component {
     showHuarong() {
         director.loadScene('Huarong');
     }
+
+    showDaxigua() {
+        director.loadScene('Daxigua');
+    }
+
+    back() {
+        director.loadScene('UI');
+    }
 }
 
 /**
