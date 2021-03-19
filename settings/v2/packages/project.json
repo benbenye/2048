@@ -3,7 +3,7 @@
   "general": {
     "designResolution": {
       "width": 1080,
-      "height": 2144
+      "height": 1920
     }
   },
   "physics": {
@@ -95,7 +95,7 @@
     "autoSimulation": true,
     "gravity": {
       "x": 0,
-      "y": -100,
+      "y": -700,
       "z": 0
     }
   }
