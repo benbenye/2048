@@ -1,5 +1,5 @@
 
-import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label, Sprite } from 'cc';
+import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label, Sprite, macro } from 'cc';
 const { ccclass, property } = _decorator;
 import _ from '../lodash';
 import Fruit from './Fruit';
@@ -16,9 +16,10 @@ export class DaxiguaManager extends Component {
     count: number = 0;
     warningLine: Node = new Node();
     warningPosition: number = 0;
+    gameOverUI: Node = new Node();
 
     onLoad() {
-        const root = find('Canvas');
+        const root = find('Canvas/fruitNode');
 
         root.on(SystemEvent.EventType.MOUSE_DOWN, this.flagClick, this);
         root.on(SystemEvent.EventType.MOUSE_UP, this.finalClick, this);
@@ -35,7 +36,7 @@ export class DaxiguaManager extends Component {
             RunTimeData.instance().score = 0;
             this.scoreLabel = find('Canvas/Score')?.getComponent(Label);
             this.warningLine = find('Canvas/WarningLine');
-            this.warningPosition = this.warningLine.position.y - this.warningLine.height / 2
+            this.gameOverUI = find('Canvas/GameOver');
         }
     }
 
@@ -58,6 +59,10 @@ export class DaxiguaManager extends Component {
         tween(this.oneFruitNode).to(0.2, {
             worldPosition: new Vec3(aa?.x, this.oneFruitNode.getWorldPosition().y, 0)
         }).call(() => {
+            const colliderCom = this.oneFruitNode.getComponent(CircleCollider2D);
+            if (!colliderCom) return;
+            colliderCom.radius = this.oneFruitNode.height / 2;
+            colliderCom.apply();
             bodyCom.type = ERigidBody2DType.Dynamic;
             this.oneFruitNode = null;
             this.scheduleOnce(() => {
@@ -159,6 +164,7 @@ export class DaxiguaManager extends Component {
             fruitCom.isStandby = true;
             bodyCom.linearDamping = 6;
             colliderCom.friction = 16;
+            colliderCom.radius = 0;
             colliderCom.apply();
             tween(node).to(.3, {
                 scale: new Vec3(2, 2, 2)
@@ -180,20 +186,37 @@ export class DaxiguaManager extends Component {
         const withoutStandby = allFruit.filter(node => {
             return !node.getComponent(Fruit).isStandby
         })
-        const sorted = _.sortBy(withoutStandby, (o) => {
-            o.position.y
-        })
+        const sorted = _.sortBy(withoutStandby, (o) => 
+            o.worldPosition.y
+        )
         if (!sorted.length) return;
-        const highestPosition = _.last(sorted).position.y - _.last(sorted).height / 2
-        if (this.warningPosition - highestPosition < 100) {
+        const highestPosition = _.last(sorted).worldPosition.y + _.last(sorted).height
+        this.warningPosition = this.warningLine.worldPosition.y - this.warningLine.height / 2;
+        if (this.warningPosition - highestPosition < 1200) {
+            if (this.warningPosition - highestPosition < 900) {
+                this.gameOver();
+            }
+            if (this.warningLine.scale.y) return;
+            this.warningLine.setScale(new Vec3(1, 1, 1));
             const interval = 0.1
-            const repeat = 10;
             const delay = 0;
-            let count = 0;
+            let count = 1;
             this.schedule(() => {
                 this.warningLine.getComponent(Sprite).color.a = count % 2 ? 100 : 255;
                 count++
-            }, interval, repeat, delay);
+            }, interval, macro.REPEAT_FOREVER, delay);
+            return
         }
+        this.warningLine.setScale(new Vec3(1, 0, 1));
+    }
+
+    gameOver() {
+        this.gameState = Constants.DaxiguaGameState.GAME_OVER;
+        this.gameOverUI.active = true;
+    }
+
+    reStart() {
+        this.gameState = Constants.DaxiguaGameState.IDLE;
+        this.gameOverUI.active = false;
     }
 }
