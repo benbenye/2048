@@ -6,7 +6,7 @@ const { ccclass, property } = _decorator;
 export default class LoadPrefabReturnNode {
     static prefabMap = new Map<string, Prefab>();
 
-    static getNode(url: string, cb?: Function, ...args: any[]) {
+    static getNode(url: string, cb?: Function, ...args: any[]): Promise<Node> {
         return new Promise((res, rej) => {
             if (this.prefabMap.has(url)) {
                 res(instantiate(this.prefabMap.get(url)) as Node)

@@ -24,7 +24,7 @@
     "_prefab": null,
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 93
+      "__id__": 97
     },
     "_id": "992b78fb-0d51-4075-ba30-a266d9b48010"
   },
@@ -70,19 +70,19 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 85
-      },
-      {
-        "__id__": 87
-      },
-      {
         "__id__": 89
       },
       {
         "__id__": 91
       },
       {
-        "__id__": 92
+        "__id__": 93
+      },
+      {
+        "__id__": 95
+      },
+      {
+        "__id__": 96
       }
     ],
     "_prefab": null,
@@ -292,9 +292,9 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 197,
-      "g": 166,
-      "b": 5,
+      "r": 202,
+      "g": 174,
+      "b": 26,
       "a": 255
     },
     "_spriteFrame": {
@@ -1543,10 +1543,16 @@
         "__id__": 81
       },
       {
-        "__id__": 82
+        "__id__": 83
       },
       {
-        "__id__": 83
+        "__id__": 85
+      },
+      {
+        "__id__": 86
+      },
+      {
+        "__id__": 88
       }
     ],
     "_prefab": null,
@@ -1569,14 +1575,14 @@
       "y": 1,
       "z": 1
     },
-    "_layer": 1073741824,
+    "_layer": 33554432,
     "_euler": {
       "__type__": "cc.Vec3",
       "x": 0,
       "y": 0,
       "z": 0
     },
-    "_id": "15NGmsKZ9AeLZviA8qHM/g"
+    "_id": "76FDE6GylH7qBrwEAAeZoI"
   },
   {
     "__type__": "cc.Node",
@@ -2027,7 +2033,9 @@
       "__id__": 62
     },
     "_enabled": true,
-    "__prefab": null,
+    "__prefab": {
+      "__id__": 82
+    },
     "_priority": 0,
     "_contentSize": {
       "__type__": "cc.Size",
@@ -2039,7 +2047,44 @@
       "x": 0.5,
       "y": 0.5
     },
-    "_id": "324hXW2LVJV5i7CcdOtFHg"
+    "_id": "67/AbNPbRGl41hT2tNCdIl"
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "85Rkr8igNOB6QSD/HtnhgH"
+  },
+  {
+    "__type__": "cc.Mask",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 62
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 84
+    },
+    "_visFlags": 0,
+    "_customMaterial": null,
+    "_srcBlendFactor": 2,
+    "_dstBlendFactor": 4,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_type": 0,
+    "_inverted": false,
+    "_segments": 64,
+    "_spriteFrame": null,
+    "_alphaThreshold": 0.1,
+    "_id": "19jGSzElpJGopHwODJhEK5"
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "90TR3hptxAq7K974GgvafO"
   },
   {
     "__type__": "cc.Widget",
@@ -2068,7 +2113,7 @@
     "_originalHeight": 100,
     "_alignMode": 2,
     "_lockFlags": 0,
-    "_id": "1bfeZcaiZPbLDnAEiU6zHI"
+    "_id": "13pwaFvPNOlr3E57vVDhOf"
   },
   {
     "__type__": "cc.Button",
@@ -2081,7 +2126,7 @@
     "__prefab": null,
     "clickEvents": [
       {
-        "__id__": 84
+        "__id__": 87
       }
     ],
     "_interactable": true,
@@ -2121,7 +2166,7 @@
     "_duration": 0.1,
     "_zoomScale": 1.2,
     "_target": null,
-    "_id": "d98y4sO99Jo6NBvC1wllOx"
+    "_id": "64HJH75NhC04qcwnHr6xpP"
   },
   {
     "__type__": "cc.ClickEvent",
@@ -2134,6 +2179,17 @@
     "customEventData": ""
   },
   {
+    "__type__": "cc.BlockInputEvents",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 62
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "_id": "7cjQ3tM1RCfp+XV2xixHoj"
+  },
+  {
     "__type__": "cc.UITransform",
     "_name": "",
     "_objFlags": 0,
@@ -2142,7 +2198,7 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 86
+      "__id__": 90
     },
     "_priority": 0,
     "_contentSize": {
@@ -2170,7 +2226,7 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 88
+      "__id__": 92
     },
     "_cameraComponent": {
       "__id__": 4
@@ -2191,7 +2247,7 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 90
+      "__id__": 94
     },
     "_alignFlags": 45,
     "_target": null,
@@ -2242,16 +2298,16 @@
   {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 94
+      "__id__": 98
     },
     "shadows": {
-      "__id__": 95
+      "__id__": 99
     },
     "_skybox": {
-      "__id__": 96
+      "__id__": 100
     },
     "fog": {
-      "__id__": 97
+      "__id__": 101
     }
   },
   {
