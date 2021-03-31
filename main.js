@@ -5,7 +5,7 @@ $(document).ready(function(){
 });
 function newgame(){
 
-	var board = new Board(4, 0, '#grid-container');
+	var board = new Board(4, 0, '#grid-container', '#cell-container');
 
 	board.init('#grid-container');
 

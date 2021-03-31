@@ -1,4 +1,4 @@
-function Board(dimension,score,container){
+function Board(dimension,score,container, cellContainer){
 	/*棋盘对象
 	*@param dimension 棋盘维度
 	*@param container 棋盘渲染dom容器
@@ -9,6 +9,7 @@ function Board(dimension,score,container){
 	this.empty = dimension * dimension;
 	this.score = score;
 	this.container = container;
+	this.cellContainer = cellContainer
 	/*
 	*棋盘初始化
 	*/
@@ -21,7 +22,7 @@ function Board(dimension,score,container){
 
 		empty = dimension * dimension;
 
-		ui.showBoard(this.container,dimension);
+		ui.showBoard(this.container,dimension, this.cellContainer);
 
 		this.start();
 	};
@@ -70,7 +71,7 @@ function Board(dimension,score,container){
 			}
 
 			this.updateEmpty(cellNew);
-			cellNew.show(this.container, cellNew, 1);
+			cellNew.show(this.cellContainer, cellNew, 1);
 		}else{
 			alert('无空位置');
 		}
@@ -114,7 +115,7 @@ function Board(dimension,score,container){
 					}
 					this.cells[i][k].x=i;
 					this.cells[i][k].y=k;
-					ui.showCell(this.container, this.cells[i][k]);
+					ui.showCell(this.cellContainer, this.cells[i][k]);
 				}
 			}
 			tempArray=[];
