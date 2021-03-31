@@ -1,5 +1,5 @@
 
-import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label, Sprite, macro } from 'cc';
+import { _decorator, Component, Node, find, SystemEvent, EventMouse, Contact2DType, RigidBody2D, ERigidBody2DType, CircleCollider2D, Vec3, UITransform, Vec2, Camera,  tween, Label, Sprite, macro, ParticleSystem2D, Animation } from 'cc';
 const { ccclass, property } = _decorator;
 import _ from '../lodash';
 import Fruit from './Fruit';
@@ -118,6 +118,7 @@ export class DaxiguaManager extends Component {
                 }
                 _tween.call(() => {
                     this.createFruit(+selfFruit.name + 1, otherFruit.getPosition());
+                    this.createJuice(otherFruit.getPosition());
                     otherFruit.active = false;
                     selfFruit.active = false;
                     otherFruit.destroy();
@@ -183,6 +184,21 @@ export class DaxiguaManager extends Component {
         })
     }
 
+    createJuice(position: Vec3) {
+        return LoadPrefabReturnNode.getNode(`daxigua/juice`).then((node: Node) => {
+            const effect = find('Canvas/Effect');
+            node.setPosition(position)
+            node.parent = effect;
+            const guozhi = node.getChildByName('guozhi')
+            const guoli = node.getChildByName('guoli')
+            const shui = node.getChildByName('shui')
+            console.log(shui, guozhi, guoli) 
+            guozhi.getComponent(ParticleSystem2D).resetSystem();
+            guoli.getComponent(ParticleSystem2D).resetSystem();
+            shui.getComponent(Animation).play();
+        });
+    }
+
     findHighestFruit() {
         const allFruit = this.fruitNode.children;
         const withoutStandby = allFruit.filter(node => {
@@ -236,6 +252,7 @@ export class DaxiguaManager extends Component {
             this.gameOverUI.getChildByName('FinalScore').getComponent(Label).string = `总得分：${RunTimeData.instance().score}`;
             this.warningLine.setScale(new Vec3(1, 0, 1));
         });
+        // ParticleSystem2D
     }
 
     reStart(event: TouchEvent) {

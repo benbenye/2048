@@ -1,0 +1,70 @@
+{
+  "ver": "1.0.2",
+  "importer": "particle",
+  "imported": true,
+  "uuid": "b8a72f4d-1883-4a8e-8c2d-0f26be84edf1",
+  "files": [
+    ".plist",
+    ".json"
+  ],
+  "subMetas": {},
+  "userData": {
+    "totalParticles": 100,
+    "life": 1.1,
+    "lifeVar": 0.4,
+    "emissionRate": 90.9090909090909,
+    "duration": 0.5,
+    "srcBlendFactor": 1,
+    "dstBlendFactor": 1,
+    "startColor": {
+      "_val": 4281545523
+    },
+    "startColorVar": {
+      "_val": 422772736
+    },
+    "endColor": {
+      "_val": 4278190080
+    },
+    "endColorVar": {
+      "_val": 0
+    },
+    "startSize": 11,
+    "startSizeVar": 10,
+    "endSize": 46,
+    "endSizeVar": 0,
+    "positionType": 0,
+    "sourcePos": {
+      "x": 0,
+      "y": 0
+    },
+    "posVar": {
+      "x": 15,
+      "y": -20
+    },
+    "angle": -60,
+    "angleVar": 180,
+    "startSpin": -1083,
+    "startSpinVar": 0,
+    "endSpin": -981,
+    "endSpinVar": 0,
+    "emitterMode": 0,
+    "gravity": {
+      "x": 0,
+      "y": 0
+    },
+    "speed": 80,
+    "speedVar": 5,
+    "radialAccel": 0,
+    "radialAccelVar": 0,
+    "tangentialAccel": 0,
+    "tangentialAccelVar": 0,
+    "rotationIsDir": false,
+    "startRadius": 0,
+    "startRadiusVar": 0,
+    "endRadius": 0,
+    "endRadiusVar": 0,
+    "rotatePerS": 0,
+    "rotatePerSVar": 0,
+    "spriteFrameUuid": ""
+  }
+}

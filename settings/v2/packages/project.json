@@ -95,7 +95,7 @@
     "autoSimulation": true,
     "gravity": {
       "x": 0,
-      "y": -700,
+      "y": -400,
       "z": 0
     }
   }
