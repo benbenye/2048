@@ -144,12 +144,12 @@ export default class ChessManager extends Component {
             }
             if (boxComponent) {
                 if (vector.x) {
-                    boxComponent.size.width = 216.5;
+                    boxComponent.size.width = 217.5;
                     boxComponent.size.height = 200;
                 }
                 if (vector.y) {
                     boxComponent.size.width = 200;
-                    boxComponent.size.height = 216.5;
+                    boxComponent.size.height = 217.5;
                 }
                 boxComponent.group = +node.name.split('-')[1];
                 boxComponent.apply();
